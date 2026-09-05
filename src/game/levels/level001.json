@@ -1,0 +1,18 @@
+{
+  "id": 1,
+  "gridSize": 6,
+  "difficulty": "easy",
+  "parMoves": 1,
+  "vehicles": [
+    {
+      "id": "car-1",
+      "type": "car",
+      "x": 2,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    }
+  ]
+}

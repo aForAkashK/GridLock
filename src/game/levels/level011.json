@@ -1,0 +1,78 @@
+{
+  "id": 11,
+  "gridSize": 6,
+  "difficulty": "medium",
+  "vehicles": [
+    {
+      "id": "car-1",
+      "type": "car",
+      "x": 2,
+      "y": 1,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "car-2",
+      "type": "car",
+      "x": 3,
+      "y": 3,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "blue"
+    },
+    {
+      "id": "car-3",
+      "type": "car",
+      "x": 4,
+      "y": 4,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "yellow"
+    },
+    {
+      "id": "car-4",
+      "type": "car",
+      "x": 0,
+      "y": 2,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "green"
+    },
+    {
+      "id": "truck-5",
+      "type": "truck",
+      "x": 1,
+      "y": 3,
+      "width": 1,
+      "height": 3,
+      "direction": "up",
+      "color": "purple"
+    },
+    {
+      "id": "truck-6",
+      "type": "truck",
+      "x": 4,
+      "y": 1,
+      "width": 1,
+      "height": 3,
+      "direction": "down",
+      "color": "orange"
+    },
+    {
+      "id": "car-7",
+      "type": "car",
+      "x": 0,
+      "y": 1,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    }
+  ],
+  "parMoves": 9
+}

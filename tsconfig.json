@@ -1,0 +1,11 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    // The base config sets types to ["jest"] only. `node` is needed for the
+    // build-time level validator in tools/, which runs outside the app.
+    "types": ["jest", "node"],
+    "resolveJsonModule": true
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["**/node_modules", "**/Pods"]
+}
