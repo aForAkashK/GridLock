@@ -123,19 +123,65 @@ per-frame goes through the JS thread — see `ARCHITECTURE.md`.
 
 ### Home
 
+Built against `UI/Home_UI.png`, over the background art in
+`assets/ui/bg/home.png`.
+
 ```
-        FREEWAY ESCAPE
+ ⚙        🪙 1,250                    ← chrome, in the sky band
+        [ art: logo + tagline ]
+        [ art: city + vehicles ]
 
-          [  PLAY  ]
+        ┌──────────────────┐
+        │   ▶  PLAY        │          ← green pill, level as subtitle
+        │   CONTINUE · L7  │
+        └──────────────────┘
 
-        🪙 1,250 coins
-
-        Daily Challenge
-        🏆 Achievements
-        ⚙  Settings
+  LEVELS   DAILY   AWARDS   SHOP      ← 4 tiles; unbuilt ones read SOON
+  ┌────────────────────────────┐
+  │ 🏁 6 of 20 cleared    30%  │      ← progress banner
+  └────────────────────────────┘
 ```
 
 One obvious action. PLAY is the largest element on screen and needs no thought.
+
+**The screen draws no title text.** Logo, tagline, skyline and vehicles are all
+in the background art. Rendering a title in the layout would double it up.
+
+**The art is 9:21 (821 x 1916) and drawn full-bleed with `cover`.** Being
+taller than any common phone, `cover` only ever trims the flat sky band at the
+top and the flat road at the bottom. It never crops horizontally, which is what
+would clip the logo — the logo spans 16%-85% of the image width and has no
+margin to lose.
+
+**The Image MUST be given an explicit width and height.** With only
+`position: absolute` and inset-0 it has no definite box to cover, so it falls
+back to drawing at its intrinsic size treated as dp. On a 2.75-density screen
+that renders 821 x 1916 as 2258 x 5269 px — a ~2.7x zoom showing only the
+top-left corner. Size it from `useWindowDimensions`.
+
+The giveaway when this regresses: the over-scale factor equals the device
+pixel density almost exactly.
+
+An earlier revision fitted a 2:3 version of the art to WIDTH and patched the
+gaps with two coloured Views — a sky strip behind the status bar and road
+colour below. The 9:21 export made both unnecessary; if the art is ever
+re-exported at a shorter ratio, they come back.
+
+Every colour in `Home` is sampled from these two files by patch median, not
+chosen by eye.
+
+### Tiles for features that do not exist
+
+The reference shows Daily Challenge, Achievements, Vehicles, Shop, Go Premium
+and a coin `+`. None are built, and the reference omits level select, which is.
+
+Unbuilt tiles render dimmed with a **SOON** label and are genuinely inert —
+the `disabled` case, not `affordable`: they are not gated on a balance, they
+have not been written. A labelled tile tells the player what is coming; a
+silent one reads as a broken UI.
+
+The same rule killed a filled-but-empty chip used to balance the top bar. It
+is transparent now: it still holds the layout, but no longer looks tappable.
 
 ### Game
 

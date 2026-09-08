@@ -10,6 +10,7 @@
  */
 
 import { storage, StorageKeys, getBool } from '../storage/mmkv';
+import { isAccountLinkingConfigured } from './authService';
 
 const TRIGGER_LEVEL = 10;
 const TRIGGER_COIN_BALANCE = 500;
@@ -19,6 +20,12 @@ export function shouldShowNudge(args: {
   coinBalance: number;
   hasRecoverableIdentity: boolean;
 }): boolean {
+  // Offering to save progress when no provider is configured would open a
+  // prompt whose only outcome is an error. Better to stay silent until the
+  // Firebase project can actually honour it.
+  if (!isAccountLinkingConfigured()) {
+    return false;
+  }
   if (args.hasRecoverableIdentity) {
     return false;
   }

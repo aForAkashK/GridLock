@@ -186,6 +186,43 @@ Enough for a polished prototype. **Do not generate 100 assets.**
 
 ---
 
+## Colour is carried by the ASSET, not by code
+
+Level JSON assigns each vehicle a palette key (`red`, `blue`, `yellow`,
+`green`, `purple`, `orange`). The renderer does not tint sprites, and should
+not: recolouring a saturated red car to blue with a colour matrix produces
+muddy results and destroys the highlights and glass. It looks worse than the
+primitive shapes it replaced.
+
+So one file is needed per **type x colour actually used by levels**:
+
+```
+vehicles/car/car_red.webp      car_blue.webp    car_yellow.webp
+                car_green.webp  car_purple.webp  car_orange.webp
+vehicles/truck/truck_<colour>.webp
+vehicles/bus/bus_<colour>.webp
+vehicles/taxi/taxi_yellow.webp        (taxis are always yellow)
+vehicles/police/police.webp           (always black and white)
+```
+
+Until those exist, every car on the board renders identically and the player
+cannot tell two vehicles apart — which removes one of the three cues
+`DESIGN.md` relies on (silhouette, arrow, colour).
+
+`sprites.ts` maps type -> asset today; it becomes type + colour -> asset when
+the files land. Nothing outside that file changes.
+
+## Interim: background removal for temporary art
+
+The first temporary sprites arrived as RGB with solid white backgrounds. They
+were made transparent with a border **flood fill** (`/tmp/cutout.py` pattern),
+not a colour key: only background connected to the image edge is removed, so
+enclosed white — the car's racing stripes, the taxi and police panels — is
+preserved. A naive "make white transparent" punches holes through all three.
+
+Originals are kept alongside as `*_raw.png`. Final art must ship with real
+alpha so this step disappears.
+
 ## Integration
 
 Assets are referenced through a resolver, never imported ad hoc across the
@@ -194,3 +231,13 @@ codebase. Swapping a skin or an environment must be a data change.
 The test of whether this worked: replacing every placeholder with final art in
 Phase 6 should require **no gameplay code change at all**. If it does, the
 layer boundary leaked — that is the bug, not the art.
+
+## Sprite orientation
+
+Orientation is declared once in code. The temporary art faces DOWN, so
+`sprites.ts` sets `SPRITE_FACES = 'down'` and every rotation derives from it.
+If final art faces up, flip that one constant rather than editing four
+direction cases.
+
+Ship one orientation per vehicle; the renderer rotates it, exactly as it does
+for the arrows.

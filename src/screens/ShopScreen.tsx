@@ -4,24 +4,25 @@
  */
 
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Colors, Spacing } from '../theme/tokens';
+import { StyleSheet, Text } from 'react-native';
+import { ScreenBackground } from '../components/home/ScreenBackground';
+import { Spacing } from '../theme/tokens';
 
 export function ShopScreen() {
   return (
-    <View style={styles.container}>
+    <ScreenBackground>
       <Text style={styles.text}>Coming soon</Text>
-    </View>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.screenBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.lg,
+  text: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: '60%',
+    paddingHorizontal: Spacing.lg,
   },
-  text: { color: Colors.textSecondary, fontSize: 16 },
 });

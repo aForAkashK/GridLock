@@ -226,19 +226,41 @@ look for a rebuilt grid before blaming level design.
 
 ## Phase 8 — Firebase
 
-- [ ] Create the Firebase project
-- [ ] Add `google-services.json` / `GoogleService-Info.plist` (**not
+- [x] Create the Firebase project (`gridlock-bee41`)
+- [x] Add `google-services.json` / `GoogleService-Info.plist` (**not
       committed**)
-- [ ] Anonymous sign-in at launch
-- [ ] Firestore `players/{uid}` document
-- [ ] Wire the real write in `syncQueue.flush()`
-- [ ] Wire `fetchCloudPlayerState`, verify the `syncVersion` merge
-- [ ] Firestore security rules — a player may only read/write their own doc
-- [ ] Silent Play Games / Game Center link
-- [ ] `SaveProgressPrompt` at the milestone
+- [x] Anonymous sign-in at launch — code complete
+- [x] Firestore `players/{uid}` document shape
+- [x] Wire the real write in `syncQueue.flush()` — fire-and-forget, merge:true
+- [x] Wire `fetchCloudPlayerState` + `syncVersion` merge
+- [x] `bootstrap.ts` — runs alongside first render, never rejects, 8s cloud cap
+- [x] Flush on level complete (third trigger, alongside background and idle)
+- [x] `firestore.rules` written
+- [ ] **Enable Anonymous sign-in in the Firebase console** ← blocking
+- [ ] Deploy the rules: `firebase deploy --only firestore:rules`
+- [ ] Silent Play Games / Game Center link ← blocked on OAuth config
+- [ ] `SaveProgressPrompt` at the milestone ← gated off until linking works
 - [ ] Handle `credential-already-in-use` — offer to switch to the cloud save
 
-**Verify explicitly:**
+### Blocked on Firebase console settings, not code
+
+**Anonymous sign-in is disabled.** `signInAnonymously` fails with
+`CONFIGURATION_NOT_FOUND`. Fix in Authentication → Sign-in method → Anonymous →
+Enable. Nothing in the sync path can be verified until this is on.
+
+**No OAuth client exists**, so no link path can work. `google-services.json`
+has no `oauth_client` entry. Enable Google sign-in in the console, add the
+debug SHA-1, re-download the file, then flip `isAccountLinkingConfigured()` in
+`authService.ts` to a real check.
+
+Until then `shouldShowNudge` returns false — offering to save progress when no
+provider is configured would open a prompt whose only outcome is an error.
+
+**Verified anyway:** with auth failing, the app still launches, renders, and
+plays from local state with no crash and no unhandled rejection. That is the
+whole point of `bootstrap()` never rejecting.
+
+**Verify explicitly — all still pending, blocked on console setup:**
 - Earn coins → background the app → confirm the write lands.
 - Earn coins offline → return online → confirm it drains.
 - Reinstall with a linked account → confirm coins restore.

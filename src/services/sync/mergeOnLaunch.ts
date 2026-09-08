@@ -11,6 +11,7 @@
  * and make spend-tracking meaningless.
  */
 
+import { doc, getDoc, getFirestore } from '@react-native-firebase/firestore';
 import { storage, StorageKeys, getNumber } from '../storage/mmkv';
 
 export type CloudPlayerState = {
@@ -43,12 +44,33 @@ export function mergePlayerState(cloud: CloudPlayerState | null): MergeOutcome {
   return 'local_wins';
 }
 
-/** Reads players/{uid} from Firestore. Awaited only during the splash screen. */
+/**
+ * Reads players/{uid} from Firestore.
+ *
+ * This is the ONE place the app waits on the network, and only during startup.
+ * Callers must bound it (see `bootstrap.ts`): a slow network must delay the
+ * cloud merge, never the first frame.
+ */
 export async function fetchCloudPlayerState(
-  _uid: string,
+  uid: string,
 ): Promise<CloudPlayerState | null> {
-  // TODO(sync): firestore().collection('players').doc(uid).get()
-  throw new Error('Not implemented');
+  const snapshot = await getDoc(doc(getFirestore(), 'players', uid));
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const data = snapshot.data();
+  if (!data || typeof data.coins !== 'number') {
+    // A document that exists but has no usable balance is treated as absent —
+    // better to keep the local value than to overwrite it with a partial write
+    // from an older client.
+    return null;
+  }
+
+  return {
+    coins: data.coins,
+    syncVersion: typeof data.syncVersion === 'number' ? data.syncVersion : 0,
+  };
 }
 
 export { getNumber };

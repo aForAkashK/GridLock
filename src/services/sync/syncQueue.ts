@@ -18,6 +18,13 @@
  */
 
 import { AppState, type AppStateStatus } from 'react-native';
+import {
+  doc,
+  getFirestore,
+  serverTimestamp,
+  setDoc,
+} from '@react-native-firebase/firestore';
+import { getCurrentUid } from '../auth/authService';
 import type { CoinReason } from '../coins/types';
 
 const IDLE_FLUSH_MS = 2000;
@@ -60,19 +67,39 @@ export function flush(): void {
     return;
   }
 
+  const uid = getCurrentUid();
+  if (!uid) {
+    // Sign-in has not completed yet. Leave the write queued rather than
+    // dropping it — the next flush (or the idle timer) will pick it up.
+    return;
+  }
+
   // Taken and cleared together: a write that fails must not silently re-queue
   // stale data behind a newer balance.
-  const _write = pending;
+  const write = pending;
   pending = null;
 
-  // TODO(sync): write { coins, syncVersion, updatedAt } to players/{uid} via
-  // firestore().set(..., { merge: true }). Must NOT be awaited by callers —
-  // Firestore's offline persistence makes it durable-and-instant locally, then
-  // it drains when the network returns.
+  // NOT awaited, by design (DECISIONS.md D-004). Firestore's offline
+  // persistence makes this durable-and-instant locally and drains it when the
+  // network returns, so the caller's tap is already fully resolved.
   //
-  // Until that lands, `_write` is deliberately unused rather than deleted: the
-  // capture-then-clear ordering above is the part that is easy to get wrong,
-  // and removing it would mean rediscovering it later.
+  // `merge: true` because this document also holds fields this queue does not
+  // own; a full overwrite would erase them.
+  setDoc(
+    doc(getFirestore(), 'players', uid),
+    {
+      coins: write.balance,
+      syncVersion: write.version,
+      lastReason: write.reason,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  ).catch(() => {
+    // Deliberately swallowed. A failed sync must never surface to a player
+    // mid-level, and must never block. The local balance is already correct;
+    // the next mutation re-queues a write with a higher syncVersion, so a lost
+    // write is self-healing rather than a divergence.
+  });
 }
 
 /**

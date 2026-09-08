@@ -43,3 +43,42 @@ export const Timing = {
   exitMs: 300,
   bounceMs: 120,
 } as const;
+
+/**
+ * Home screen palette, sampled from `assets/ui/bg/home.png` and the
+ * `UI/Home_UI.png` reference rather than picked by eye.
+ *
+ * The background art carries the logo, tagline and vehicles, so the screen
+ * never draws those itself — the chrome here only has to sit on top of it
+ * without fighting it.
+ */
+export const Home = {
+  /** Road grey at the foot of the art. Fills below where the image ends. */
+  road: '#5A5462',
+  roadDeep: '#4A4553',
+
+  /** Dark navy used by the top-bar chrome in the reference. */
+  chrome: '#26324C',
+  chromeBorder: '#1A2338',
+
+  coinGold: '#FEE032',
+
+  /** Median of the artwork's top edge, for the strip behind the status bar. */
+  sky: '#1F9CFD',
+
+  /** The PLAY button reads as a lit green pill with a darker rim. */
+  playTop: '#67E03D',
+  playBottom: '#35B938',
+  playRim: '#248A32',
+
+  /** Category tiles, in reference order. */
+  tileBlue: '#4AA8F0',
+  tilePurple: '#8358E0',
+  tileAmber: '#F5C02E',
+  tilePink: '#E8456B',
+  tileHighlight: 'rgba(255, 255, 255, 0.28)',
+
+  badge: '#E32B30',
+  banner: '#F7E6D1',
+  bannerInk: '#4A4553',
+} as const;
