@@ -12,7 +12,7 @@
 import React from 'react';
 import { Image, StyleSheet, useWindowDimensions, View } from 'react-native';
 
-const BG = require('../../../assets/ui/bg/home.png');
+const BG = require('../../../assets/ui/bg/home.webp');
 
 type Props = { children: React.ReactNode; scrim?: number };
 

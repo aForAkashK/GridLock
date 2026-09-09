@@ -1,7 +1,7 @@
 /**
  * The primary call to action.
  *
- * Uses the finished button art (`assets/ui/buttons/play.png`), which has the
+ * Uses the finished button art (`assets/ui/buttons/play.webp`), which has the
  * pill, rim, chevron and "PLAY" all baked in. Nothing is drawn on top of it —
  * the level number goes UNDERNEATH, because the artwork fills its own pill and
  * a subtitle inside would collide with the lettering.
@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { Spacing } from '../../theme/tokens';
 
-const PLAY = require('../../../assets/ui/buttons/play.png');
+const PLAY = require('../../../assets/ui/buttons/play.webp');
 /** Source art is 866 x 288. */
 const PLAY_ASPECT = 866 / 288;
 

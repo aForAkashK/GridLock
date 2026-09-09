@@ -1,7 +1,7 @@
 /**
  * Level select.
  *
- * Laid out over `assets/ui/bg/levels_bg.png`, which carries the scene AND the
+ * Laid out over `assets/ui/bg/levels_bg.webp`, which carries the scene AND the
  * painted "Levels" sign — so this screen renders no title of its own.
  *
  * A level is unlocked when it is the first, or the one before it is complete.
@@ -27,9 +27,9 @@ import { LEVELS } from '../game/levels';
 import type { RootStackParamList } from '../navigation/types';
 import { Home, Radius, Spacing } from '../theme/tokens';
 
-const BG = require('../../assets/ui/bg/levels_bg.png');
-const TILE_OPEN = require('../../assets/ui/buttons/playable_level.png');
-const TILE_LOCKED = require('../../assets/ui/buttons/disabled_level.png');
+const BG = require('../../assets/ui/bg/levels_bg.webp');
+const TILE_OPEN = require('../../assets/ui/buttons/playable_level.webp');
+const TILE_LOCKED = require('../../assets/ui/buttons/disabled_level.webp');
 
 /**
  * Where the painted sign ends (measured: y 174..312 of 1863). The grid starts

@@ -45,7 +45,7 @@ export const Timing = {
 } as const;
 
 /**
- * Home screen palette, sampled from `assets/ui/bg/home.png` and the
+ * Home screen palette, sampled from `assets/ui/bg/home.webp` and the
  * `UI/Home_UI.png` reference rather than picked by eye.
  *
  * The background art carries the logo, tagline and vehicles, so the screen

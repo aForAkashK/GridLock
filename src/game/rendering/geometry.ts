@@ -19,7 +19,7 @@ export type BoardLayout = {
 };
 
 /**
- * The board surface is painted into `gameplay_bg.png`, and the canvas is laid
+ * The board surface is painted into `gameplay_bg.webp`, and the canvas is laid
  * directly over its playing field — so the grid fills the canvas exactly and
  * there is no border art to leave room for.
  */

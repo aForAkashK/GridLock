@@ -1,7 +1,7 @@
 /**
  * Home.
  *
- * Laid out against `assets/ui/bg/home.png`, which already contains the logo,
+ * Laid out against `assets/ui/bg/home.webp`, which already contains the logo,
  * tagline, skyline and vehicles — so this screen draws NO title text. Adding
  * one would double up on artwork that is baked into the image.
  *
@@ -31,7 +31,7 @@ import { getLevel, TOTAL_LEVELS } from '../game/levels';
 import type { RootStackParamList } from '../navigation/types';
 import { Home, Spacing } from '../theme/tokens';
 
-const BG = require('../../assets/ui/bg/home.png');
+const BG = require('../../assets/ui/bg/home.webp');
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 

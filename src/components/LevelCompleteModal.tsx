@@ -1,7 +1,7 @@
 /**
  * Level complete.
  *
- * Built on `assets/ui/bg/level_clear.png`, which carries the stars, the
+ * Built on `assets/ui/bg/level_clear.webp`, which carries the stars, the
  * "Cleared!" banner and the confetti — so this component renders no title.
  *
  * Appears ~400ms after the last vehicle escapes so the exit animation gets to
@@ -19,7 +19,7 @@ import {
   View,
 } from 'react-native';
 
-const PANEL = require('../../assets/ui/bg/level_clear.png');
+const PANEL = require('../../assets/ui/bg/level_clear.webp');
 const PANEL_ASPECT = 1105 / 1423;
 /**
  * The three button assets were cropped separately, so their aspect ratios
@@ -29,9 +29,9 @@ const PANEL_ASPECT = 1105 / 1423;
  * small height differences that follow are far less noticeable.
  */
 const BUTTON_ART = {
-  next: { src: require('../../assets/ui/buttons/next_level.png'), aspect: 1991 / 448 },
-  replay: { src: require('../../assets/ui/buttons/replay.png'), aspect: 2075 / 499 },
-  home: { src: require('../../assets/ui/buttons/home.png'), aspect: 2114 / 519 },
+  next: { src: require('../../assets/ui/buttons/next_level.webp'), aspect: 1991 / 448 },
+  replay: { src: require('../../assets/ui/buttons/replay.webp'), aspect: 2075 / 499 },
+  home: { src: require('../../assets/ui/buttons/home.webp'), aspect: 2114 / 519 },
 } as const;
 
 /**

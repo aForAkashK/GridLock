@@ -10,7 +10,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-const COIN = require('../../assets/ui/icons/coin.png');
+const COIN = require('../../assets/ui/icons/coin.webp');
 
 import { usePlayerStore } from '../state/playerStore';
 import { Colors, Radius, Spacing } from '../theme/tokens';

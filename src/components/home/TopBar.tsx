@@ -11,7 +11,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { CoinPill } from '../CoinPill';
 import { Spacing } from '../../theme/tokens';
 
-const SETTINGS = require('../../../assets/ui/icons/settings.png');
+const SETTINGS = require('../../../assets/ui/icons/settings.webp');
 const BUTTON = 48;
 
 type Props = {

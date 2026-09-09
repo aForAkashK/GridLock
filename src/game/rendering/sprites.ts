@@ -20,12 +20,12 @@ import { useImage, type SkImage } from '@shopify/react-native-skia';
 import type { Direction, VehicleType } from '../models/Vehicle';
 
 export const VEHICLE_SPRITES: Record<VehicleType, ReturnType<typeof require>> = {
-  car: require('../../../assets/game/vehicles/car/car.png'),
-  taxi: require('../../../assets/game/vehicles/taxi/taxi.png'),
-  bus: require('../../../assets/game/vehicles/bus/bus.png'),
-  truck: require('../../../assets/game/vehicles/truck/truck.png'),
-  police: require('../../../assets/game/vehicles/police/police.png'),
-  ambulance: require('../../../assets/game/vehicles/ambulance/ambulance.png'),
+  car: require('../../../assets/game/vehicles/car/car.webp'),
+  taxi: require('../../../assets/game/vehicles/taxi/taxi.webp'),
+  bus: require('../../../assets/game/vehicles/bus/bus.webp'),
+  truck: require('../../../assets/game/vehicles/truck/truck.webp'),
+  police: require('../../../assets/game/vehicles/police/police.webp'),
+  ambulance: require('../../../assets/game/vehicles/ambulance/ambulance.webp'),
 };
 
 /** Clockwise radians from "facing up" for each direction. */

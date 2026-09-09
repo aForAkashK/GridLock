@@ -15,8 +15,8 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePlayerStore } from '../state/playerStore';
 import { Home, Radius, Spacing } from '../theme/tokens';
 
-const COIN = require('../../assets/ui/icons/coin.png');
-const PLUS = require('../../assets/ui/icons/plus.png');
+const COIN = require('../../assets/ui/icons/coin.webp');
+const PLUS = require('../../assets/ui/icons/plus.webp');
 
 /** Source art is 1286x1223 — the plus is not quite square. */
 const PLUS_ASPECT = 1286 / 1223;

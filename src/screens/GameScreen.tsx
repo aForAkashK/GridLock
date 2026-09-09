@@ -30,7 +30,7 @@ import { flush as flushSync } from '../services/sync/syncQueue';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors, Home, Radius, Spacing } from '../theme/tokens';
 
-const BG = require('../../assets/ui/bg/gameplay_bg.png');
+const BG = require('../../assets/ui/bg/gameplay_bg.webp');
 
 /**
  * Finished button art. The coin cost is PAINTED INTO each one, so nothing is
@@ -38,10 +38,10 @@ const BG = require('../../assets/ui/bg/gameplay_bg.png');
  * hint 30, undo 20, reset 10, skip 100. Changing a price means new art.
  */
 const ACTION_ART = {
-  hint: require('../../assets/ui/buttons/hint.png'),
-  undo: require('../../assets/ui/buttons/undo.png'),
-  reset: require('../../assets/ui/buttons/reset.png'),
-  skip: require('../../assets/ui/buttons/skip.png'),
+  hint: require('../../assets/ui/buttons/hint.webp'),
+  undo: require('../../assets/ui/buttons/undo.webp'),
+  reset: require('../../assets/ui/buttons/reset.webp'),
+  skip: require('../../assets/ui/buttons/skip.webp'),
 } as const;
 
 /**
