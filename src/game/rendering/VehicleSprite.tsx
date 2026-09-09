@@ -16,11 +16,12 @@
 
 import React, { useEffect, useRef } from 'react';
 import {
+  BlurMask,
   Group,
+  Image as SkiaImage,
   RoundedRect,
   Path,
-  LinearGradient,
-  vec,
+  type SkImage,
 } from '@shopify/react-native-skia';
 import {
   cancelAnimation,
@@ -31,7 +32,7 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 import { DIRECTION_VECTORS, type Vehicle } from '../models/Vehicle';
-import { Colors, VehiclePalette, Timing, type PaletteKey } from '../../theme/tokens';
+import { Colors, Timing } from '../../theme/tokens';
 import {
   EXIT_EASING,
   MOVE_EASING,
@@ -46,6 +47,7 @@ import {
   makeArrowPath,
 } from './arrow';
 import { centerOf, vehicleRect, type BoardLayout } from './geometry';
+import { spriteRotation } from './sprites';
 
 type Props = {
   vehicle: Vehicle;
@@ -56,11 +58,9 @@ type Props = {
   blockedSignal?: number;
   /** The hint engine is pointing at this vehicle. */
   hinted?: boolean;
+  /** Decoded sprite, loaded once per board by `useVehicleImages`. */
+  sprite: SkImage;
 };
-
-function paletteFor(key: string) {
-  return VehiclePalette[key as PaletteKey] ?? VehiclePalette.red;
-}
 
 export function VehicleSprite({
   vehicle,
@@ -68,10 +68,10 @@ export function VehicleSprite({
   exiting = false,
   blockedSignal = 0,
   hinted = false,
+  sprite,
 }: Props) {
   const r = vehicleRect(layout, vehicle);
   const c = centerOf(r);
-  const palette = paletteFor(vehicle.color);
   const radius = Math.round(layout.cellSize * 0.26);
   const { dx, dy } = DIRECTION_VECTORS[vehicle.direction];
 
@@ -162,24 +162,9 @@ export function VehicleSprite({
     { translateY: offsetY.value },
   ]);
 
-  // Long axis of the body. Windows sit across it, which is what makes the
-  // vehicle read as facing somewhere rather than being a plain block.
-  const horizontal = r.width >= r.height;
-  const glassInset = Math.min(r.width, r.height) * 0.2;
+  const shortSide = Math.min(r.width, r.height);
+  const longSide = Math.max(r.width, r.height);
 
-  const glass = horizontal
-    ? {
-        x: r.x + r.width * 0.3,
-        y: r.y + glassInset,
-        width: r.width * 0.4,
-        height: r.height - glassInset * 2,
-      }
-    : {
-        x: r.x + glassInset,
-        y: r.y + r.height * 0.3,
-        width: r.width - glassInset * 2,
-        height: r.height * 0.4,
-      };
 
   const aSize = arrowSize(layout.cellSize);
   const aStroke = arrowStroke(layout.cellSize);
@@ -206,36 +191,39 @@ export function VehicleSprite({
 
       {/* Ambient shadow. Does most of the work of lifting the vehicle off the
           board — see DESIGN.md. Light comes from the top-left, so it falls
-          down and right. */}
-      <RoundedRect
-        x={r.x + shadowOffset * 0.6}
-        y={r.y + shadowOffset}
-        width={r.width}
-        height={r.height}
-        r={radius}
-        color="#000000"
-        opacity={0.28}
-      />
+          down and right.
 
-      {/* Body, lit top-left. */}
-      <RoundedRect x={r.x} y={r.y} width={r.width} height={r.height} r={radius}>
-        <LinearGradient
-          start={vec(r.x, r.y)}
-          end={vec(r.x + r.width, r.y + r.height)}
-          colors={[palette.body, palette.shade]}
+          It is BLURRED and inset from the footprint. A hard-edged rect at full
+          footprint size reads as a tile painted under the car rather than a
+          shadow cast by it, which is exactly how it looked before the blur. */}
+      <Group>
+        <RoundedRect
+          x={r.x + r.width * 0.09 + shadowOffset * 0.6}
+          y={r.y + r.height * 0.06 + shadowOffset}
+          width={r.width * 0.82}
+          height={r.height * 0.88}
+          r={radius}
+          color="#000000"
+          opacity={0.32}
         />
-      </RoundedRect>
+        <BlurMask blur={Math.max(3, layout.cellSize * 0.07)} style="normal" />
+      </Group>
 
-      {/* Glass. */}
-      <RoundedRect
-        x={glass.x}
-        y={glass.y}
-        width={glass.width}
-        height={glass.height}
-        r={radius * 0.5}
-        color={palette.glass}
-        opacity={0.9}
-      />
+      {/* The sprite is authored facing down, so it is drawn into an upright
+          box the size of the vehicle's SHORT x LONG footprint and then rotated
+          into place. A 2x1 car therefore uses the same asset as a 1x2 one. */}
+      <Group
+        origin={c}
+        transform={[{ rotate: spriteRotation(vehicle.direction) }]}>
+        <SkiaImage
+          image={sprite}
+          x={c.x - shortSide / 2}
+          y={c.y - longSide / 2}
+          width={shortSide}
+          height={longSide}
+          fit="fill"
+        />
+      </Group>
 
       {/* Arrow, rotated into the vehicle's direction. Drawn twice: a dark
           copy underneath keeps it legible on light body colours. */}

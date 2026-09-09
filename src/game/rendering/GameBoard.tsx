@@ -14,9 +14,9 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { Vehicle } from '../models/Vehicle';
 import type { Level } from '../models/Level';
 import { Timing } from '../../theme/tokens';
-import { Road } from './Road';
 import { VehicleSprite } from './VehicleSprite';
 import { createLayout, pxToCell } from './geometry';
+import { useVehicleImages } from './sprites';
 
 /** Small grace period so the exit animation always finishes before unmount. */
 const EXIT_GRACE_MS = 80;
@@ -51,6 +51,15 @@ export function GameBoard({
   );
 
   const toDraw = vehicles ?? level.vehicles;
+  const images = useVehicleImages();
+
+  /**
+   * Hold off drawing vehicles until every sprite this level needs has decoded.
+   * Drawing them as they arrive makes vehicles pop in one at a time, and
+   * drawing a placeholder first makes a coloured box visibly morph into a car.
+   * A board that appears complete a frame later is calmer than either.
+   */
+  const spritesReady = toDraw.every(v => images[v.type] !== null);
 
   /**
    * Vehicles the engine has already removed but which are still driving off
@@ -128,26 +137,33 @@ export function GameBoard({
   return (
     <GestureDetector gesture={gesture}>
       <View style={{ width: size, height: size }}>
+        {/* Transparent: the playing surface, its grid and its stone surround
+            are all painted into the background art. This canvas only draws
+            what moves. */}
         <Canvas style={{ width: size, height: size }}>
-          <Road layout={layout} />
-          {toDraw.map(v => (
-            <VehicleSprite
-              key={v.id}
-              vehicle={v}
-              layout={layout}
-              blockedSignal={blockedVehicleId === v.id ? blockedAt : 0}
-              hinted={hintVehicleId === v.id}
-            />
-          ))}
+          {spritesReady
+            ? toDraw.map(v => (
+                <VehicleSprite
+                  key={v.id}
+                  vehicle={v}
+                  layout={layout}
+                  sprite={images[v.type]!}
+                  blockedSignal={blockedVehicleId === v.id ? blockedAt : 0}
+                  hinted={hintVehicleId === v.id}
+                />
+              ))
+            : null}
           {exiting
             // An undo can bring a vehicle back while its exit is still
             // playing; the live copy wins.
             .filter(v => !toDraw.some(t => t.id === v.id))
+            .filter(v => images[v.type] !== null)
             .map(v => (
               <VehicleSprite
                 key={`exit-${v.id}`}
                 vehicle={v}
                 layout={layout}
+                sprite={images[v.type]!}
                 exiting
               />
             ))}

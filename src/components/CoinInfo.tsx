@@ -1,12 +1,13 @@
 /**
- * Shown when the player taps an assist they cannot afford.
+ * The one place that answers "how do I get coins?".
  *
- * DESIGN.md: an unaffordable button dims but stays tappable, and leads to the
- * ways of earning rather than doing nothing. A dead button teaches the player
- * that the UI is broken; this teaches them how the economy works.
+ * Serves two callers with the same body: the game screen when an assist is
+ * unaffordable, and the home screen's + button. Keeping them in one component
+ * means the earning routes are listed once — when rewarded ads land (Phase 10),
+ * "Watch an ad" is added here and both entry points gain it.
  *
- * When rewarded ads land (Phase 10) the "Watch an ad" option belongs here —
- * this is deliberately the single place that answers "how do I get coins?".
+ * DESIGN.md: an unaffordable action stays tappable and explains itself. A dead
+ * button reads as a broken UI.
  */
 
 import React from 'react';
@@ -17,26 +18,39 @@ import { Colors, Radius, Spacing } from '../theme/tokens';
 
 type Props = {
   visible: boolean;
-  needed: number;
   balance: number;
+  /** Set when the player tried to afford something specific. */
+  needed?: number;
   onDismiss: () => void;
 };
 
-export function NotEnoughCoins({ visible, needed, balance, onDismiss }: Props) {
+export function CoinInfo({ visible, balance, needed, onDismiss }: Props) {
   if (!visible) {
     return null;
   }
 
+  const short = needed !== undefined;
+
   return (
     <View style={styles.backdrop}>
       <View style={styles.card}>
-        <Text style={styles.title}>Not enough coins</Text>
+        <Text style={styles.title}>
+          {short ? 'Not enough coins' : 'Earning coins'}
+        </Text>
+
         <Text style={styles.body}>
-          That costs {needed} 🪙 and you have {balance}.
+          {short
+            ? `That costs ${needed} 🪙 and you have ${balance}.`
+            : `You have ${balance} 🪙.`}
         </Text>
+
         <Text style={styles.hint}>
-          Clear a level to earn +{COIN_REWARDS.level_complete} 🪙.
+          Clear a level to earn +{COIN_REWARDS.level_complete} 🪙
         </Text>
+        <Text style={styles.note}>
+          Daily rewards and rewarded ads are coming soon.
+        </Text>
+
         <GameButton
           label="Got it"
           variant="primary"
@@ -59,6 +73,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.lg,
+    zIndex: 10,
   },
   card: {
     backgroundColor: Colors.screenBackground,
@@ -78,8 +93,14 @@ const styles = StyleSheet.create({
   hint: {
     color: Colors.coin,
     fontSize: 15,
-    fontWeight: '600',
-    marginTop: Spacing.sm,
+    fontWeight: '700',
+    marginTop: Spacing.md,
+  },
+  note: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
   },
   button: { alignSelf: 'stretch', marginTop: Spacing.lg },
 });

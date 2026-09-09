@@ -1,0 +1,55 @@
+rules_version = '2';
+
+/**
+ * Firestore security rules for Freeway Escape.
+ *
+ * Deploy with:  firebase deploy --only firestore:rules
+ *
+ * The whole model: a player may read and write exactly one document, their
+ * own. There is no shared or public data in the app, so anything broader is
+ * strictly a liability.
+ *
+ * Note on trust: these rules stop a player touching SOMEONE ELSE'S balance.
+ * They cannot stop a player editing their OWN balance, because the client is
+ * authoritative over coins by design (DECISIONS.md D-004). That is an accepted
+ * trade while coins are only ever earned through play. Before coins are sold
+ * for real money, balance mutation has to move behind Cloud Functions and
+ * these rules must drop client writes to `coins` entirely.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /players/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && isValidPlayerDoc(request.resource.data);
+
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && isValidPlayerDoc(request.resource.data)
+                    // syncVersion is monotonic. Rejecting a stale or replayed
+                    // write here means a second device cannot roll the balance
+                    // backwards, which is the same rule the client merge uses.
+                    && request.resource.data.syncVersion
+                       >= resource.data.syncVersion;
+
+      // Progress is never deleted from the client. Account deletion, when it
+      // exists, belongs in a Cloud Function that can also clean up elsewhere.
+      allow delete: if false;
+    }
+
+    // Everything else is closed. New collections must opt in explicitly.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+function isValidPlayerDoc(data) {
+  return data.coins is int
+         && data.coins >= 0
+         && data.syncVersion is int
+         && data.syncVersion >= 0;
+}

@@ -5,18 +5,14 @@
  * gestures do not work outside it.
  */
 
-import React from 'react';
-import { LogBox, StatusBar, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { bootstrap } from './src/services/bootstrap';
 import { Colors } from './src/theme/tokens';
-
-// react-navigation still imports DrawerLayoutAndroid, which RN 0.87 deprecates.
-// Nothing we can act on, and in dev the LogBox toast it raises sits on top of
-// the action row and swallows taps on Hint/Undo/Reset.
-LogBox.ignoreLogs(['DrawerLayoutAndroid is deprecated']);
 
 const navTheme = {
   ...DarkTheme,
@@ -24,6 +20,14 @@ const navTheme = {
 };
 
 function App() {
+  useEffect(() => {
+    // Deliberately not awaited and not gating render: sign-in and the cloud
+    // merge run alongside the first frame. The game works entirely from local
+    // state, so a slow or absent network costs nothing but a later merge.
+    // bootstrap() never rejects, so there is no failure path to handle here.
+    bootstrap();
+  }, []);
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
