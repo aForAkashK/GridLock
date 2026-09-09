@@ -9,7 +9,9 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+const COIN = require('../../assets/ui/icons/coin.png');
+
 import { usePlayerStore } from '../state/playerStore';
 import { Colors, Radius, Spacing } from '../theme/tokens';
 
@@ -62,8 +64,14 @@ export function CoinCounter({ compact = false }: { compact?: boolean }) {
 
   return (
     <View style={[styles.wrap, compact && styles.compact]}>
+      <Image
+        source={COIN}
+        style={compact ? styles.coinSmall : styles.coin}
+        resizeMode="contain"
+        accessibilityIgnoresInvertColors
+      />
       <Text style={styles.text} accessibilityLabel={`${coins} coins`}>
-        🪙 {shown.toLocaleString()}
+        {shown.toLocaleString()}
       </Text>
     </View>
   );
@@ -71,11 +79,16 @@ export function CoinCounter({ compact = false }: { compact?: boolean }) {
 
 const styles = StyleSheet.create({
   wrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: Colors.boardBackground,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
   },
   compact: { paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm },
+  coin: { width: 24, height: 24 },
+  coinSmall: { width: 20, height: 20 },
   text: { color: Colors.textPrimary, fontSize: 16, fontWeight: '700' },
 });

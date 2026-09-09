@@ -1,51 +1,107 @@
 /**
  * Level select.
  *
+ * Laid out over `assets/ui/bg/levels_bg.png`, which carries the scene AND the
+ * painted "Levels" sign — so this screen renders no title of its own.
+ *
  * A level is unlocked when it is the first, or the one before it is complete.
  * Locked tiles stay visible rather than hidden so progress is legible.
  */
 
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ScreenBackground } from '../components/home/ScreenBackground';
+import { CoinPill } from '../components/CoinPill';
 import { usePlayerStore } from '../state/playerStore';
+import { CoinInfo } from '../components/CoinInfo';
 import { LEVELS } from '../game/levels';
 import type { RootStackParamList } from '../navigation/types';
 import { Home, Radius, Spacing } from '../theme/tokens';
+
+const BG = require('../../assets/ui/bg/levels_bg.png');
+const TILE_OPEN = require('../../assets/ui/buttons/playable_level.png');
+const TILE_LOCKED = require('../../assets/ui/buttons/disabled_level.png');
+
+/**
+ * Where the painted sign ends (measured: y 174..312 of 1863). The grid starts
+ * below it so chrome never collides with artwork.
+ */
+const BG_H = 1863;
+const SIGN_BOTTOM = 312 / BG_H;
+
+const COLUMNS = 4;
+
+/** Breathing room between the painted "Levels" sign and the first row. */
+const GRID_TOP_GAP = 52;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LevelSelect'>;
 
 export function LevelSelectScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
   const completed = usePlayerStore(s => s.completedLevels);
   const coins = usePlayerStore(s => s.coins);
+  const [coinInfo, setCoinInfo] = useState(false);
+
+  // Same cover maths as the other screens, so the grid tracks the painted sign
+  // rather than guessing at a fixed offset.
+  const scale = Math.max(width / 844, height / BG_H);
+  const bgH = BG_H * scale;
+  const bgY = (height - bgH) / 2;
+  const gridTop = bgY + SIGN_BOTTOM * bgH + GRID_TOP_GAP;
+
+  // Tighter margins than the default so the tiles themselves get bigger —
+  // the art needs room for a number AND its arrow/padlock without them
+  // crowding each other.
+  const gap = 6;
+  const sidePadding = Spacing.sm;
+  const tileSize =
+    (width - sidePadding * 2 - gap * (COLUMNS - 1)) / COLUMNS;
 
   return (
-    <ScreenBackground>
-      <View style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          hitSlop={12}
-          style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
-          <Text style={styles.backArrow}>‹</Text>
-        </Pressable>
+    <View style={styles.root}>
+      <Image
+        source={BG}
+        style={[styles.bg, { width, height }]}
+        resizeMode="cover"
+        accessibilityIgnoresInvertColors
+      />
 
-        <Text style={styles.title}>Levels</Text>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        hitSlop={12}
+        style={({ pressed }) => [
+          styles.back,
+          { top: insets.top + Spacing.sm },
+          pressed && styles.pressed,
+        ]}>
+        <Text style={styles.backArrow}>‹</Text>
+      </Pressable>
 
-        <View style={styles.coinPill}>
-          <Text style={styles.coinIcon}>🪙</Text>
-          <Text style={styles.coinText}>{coins.toLocaleString()}</Text>
-        </View>
+      <View style={[styles.coins, { top: insets.top + Spacing.sm }]}>
+        <CoinPill onAddCoins={() => setCoinInfo(true)} />
       </View>
 
       <ScrollView
         contentContainerStyle={[
           styles.grid,
-          { paddingBottom: insets.bottom + Spacing.xl },
+          {
+            paddingTop: gridTop,
+            paddingBottom: insets.bottom + Spacing.xl,
+            paddingHorizontal: sidePadding,
+            gap,
+          },
         ]}
         showsVerticalScrollIndicator={false}>
         {LEVELS.map((level, index) => {
@@ -60,40 +116,61 @@ export function LevelSelectScreen({ navigation }: Props) {
               onPress={() => navigation.navigate('Game', { levelId: level.id })}
               accessibilityRole="button"
               accessibilityLabel={
-                unlocked ? `Level ${level.id}` : `Level ${level.id}, locked`
+                unlocked
+                  ? `Level ${level.id}${isDone ? ', completed' : ''}`
+                  : `Level ${level.id}, locked`
               }
               style={({ pressed }) => [
-                styles.tile,
-                isDone && styles.tileDone,
-                !unlocked && styles.tileLocked,
+                { width: tileSize, height: tileSize },
                 pressed && styles.tilePressed,
               ]}>
-              {unlocked ? (
-                <View style={styles.tileHighlight} pointerEvents="none" />
-              ) : null}
-              <Text style={[styles.tileNumber, !unlocked && styles.lockedInk]}>
+              {/* Explicit size, NOT absoluteFill. An Image with only inset-0
+                  has no definite box, so `contain` falls back to drawing at
+                  intrinsic size treated as dp — a 1254px tile then renders
+                  enormous. Same trap as the screen backgrounds. */}
+              <Image
+                source={unlocked ? TILE_OPEN : TILE_LOCKED}
+                style={{ width: tileSize, height: tileSize }}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+              />
+              {/* The art keeps its lower half for the play arrow or padlock,
+                  so the number sits in the clear upper half. */}
+              <Text
+                style={[
+                  styles.number,
+                  { fontSize: tileSize * 0.25 },
+                  !unlocked && styles.numberLocked,
+                ]}>
                 {level.id}
               </Text>
-              <Text style={[styles.tileMark, !unlocked && styles.lockedInk]}>
-                {isDone ? '✓' : unlocked ? '▶' : '🔒'}
-              </Text>
+              {isDone ? <Text style={styles.done}>✓</Text> : null}
             </Pressable>
           );
         })}
       </ScrollView>
-    </ScreenBackground>
+
+      {/* <View style={[styles.hint, { bottom: insets.bottom + Spacing.md }]}>
+        <Text style={styles.hintText}>
+          Solve more levels and unlock new challenges!
+        </Text>
+      </View> */}
+      <CoinInfo
+        visible={coinInfo}
+        balance={coins}
+        onDismiss={() => setCoinInfo(false)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.md,
-  },
+  root: { flex: 1, backgroundColor: Home.sky },
+  bg: { position: 'absolute', top: 0, left: 0 },
+
   back: {
+    position: 'absolute',
+    left: Spacing.md,
     width: 46,
     height: 46,
     borderRadius: Radius.md,
@@ -102,69 +179,51 @@ const styles = StyleSheet.create({
     borderColor: Home.chromeBorder,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 3,
   },
   backArrow: { color: '#FFFFFF', fontSize: 28, lineHeight: 30 },
   pressed: { transform: [{ scale: 0.94 }] },
-  title: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '900',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  coinPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: Home.chrome,
-    borderWidth: 2,
-    borderColor: Home.chromeBorder,
-    borderRadius: Radius.pill,
-    paddingVertical: 7,
-    paddingHorizontal: Spacing.sm,
-    minWidth: 84,
-    justifyContent: 'center',
-  },
-  coinIcon: { fontSize: 14 },
-  coinText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
 
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    justifyContent: 'flex-start',
-  },
-  tile: {
-    width: 74,
-    height: 74,
-    borderRadius: Radius.md,
-    backgroundColor: Home.tileBlue,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
-  },
-  tileHighlight: {
+  coins: { position: 'absolute', right: Spacing.md, zIndex: 3 },
+
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  tilePressed: { transform: [{ scale: 0.95 }] },
+  number: {
     position: 'absolute',
-    top: 0,
+    // Clear of the top edge, but still above the artwork's arrow/padlock zone
+    // which starts around 45%.
+    top: '13%',
     left: 0,
     right: 0,
-    height: '38%',
-    backgroundColor: Home.tileHighlight,
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontWeight: '900',
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 3,
   },
-  tileDone: { backgroundColor: Home.playBottom },
-  // Solid, not translucent. At reduced opacity the artwork read straight
-  // through the tile, turning the grid into a window onto the logo rather than
-  // a set of buttons. Dim the CONTENT instead of the container.
-  tileLocked: { backgroundColor: 'rgba(28, 36, 52, 0.92)' },
-  tilePressed: { transform: [{ scale: 0.95 }] },
-  tileNumber: { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
-  lockedInk: { opacity: 0.5 },
-  tileMark: { color: '#FFFFFF', fontSize: 12, marginTop: 1, opacity: 0.9 },
+  numberLocked: { color: '#A8B4C8' },
+  done: {
+    position: 'absolute',
+    top: 4,
+    right: 6,
+    color: '#5BD94A',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+
+  hintWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  hint: {
+    backgroundColor: 'rgba(28, 36, 52, 0.88)',
+    borderRadius: Radius.pill,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+  },
+  hintText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
 });

@@ -33,6 +33,18 @@ import { Colors, Home, Radius, Spacing } from '../theme/tokens';
 const BG = require('../../assets/ui/bg/gameplay_bg.png');
 
 /**
+ * Finished button art. The coin cost is PAINTED INTO each one, so nothing is
+ * drawn on top and `COIN_COSTS` must stay in step with the pictures:
+ * hint 30, undo 20, reset 10, skip 100. Changing a price means new art.
+ */
+const ACTION_ART = {
+  hint: require('../../assets/ui/buttons/hint.png'),
+  undo: require('../../assets/ui/buttons/undo.png'),
+  reset: require('../../assets/ui/buttons/reset.png'),
+  skip: require('../../assets/ui/buttons/skip.png'),
+} as const;
+
+/**
  * Anchors measured from the artwork (853 x 1843), as FRACTIONS so they survive
  * `cover`'s crop on any aspect ratio.
  *
@@ -57,7 +69,7 @@ const SIGN = {
   bottom: 283 / BG_H,
 };
 
-const ACTIONS_HEIGHT = 96;
+const ACTIONS_HEIGHT = 104;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
@@ -299,29 +311,30 @@ export function GameScreen({ route, navigation }: Props) {
         ) : null}
       </View>
 
-      <View style={[styles.actions, { paddingBottom: insets.bottom }]}>
+      <View
+        style={[styles.actions, { paddingBottom: insets.bottom + Spacing.md }]}>
         <Action
-          label="💡"
-          caption={String(COIN_COSTS.hint)}
+          art={ACTION_ART.hint}
+          label={`Hint, ${COIN_COSTS.hint} coins`}
           affordable={canAfford(COIN_COSTS.hint)}
           onPress={handleHint}
         />
         <Action
-          label="↩"
-          caption={String(COIN_COSTS.undo)}
+          art={ACTION_ART.undo}
+          label={`Undo, ${COIN_COSTS.undo} coins`}
           disabled={historyLength === 0}
           affordable={canAfford(COIN_COSTS.undo)}
           onPress={handleUndo}
         />
         <Action
-          label="🔄"
-          caption={String(COIN_COSTS.reset)}
+          art={ACTION_ART.reset}
+          label={`Reset, ${COIN_COSTS.reset} coins`}
           affordable={canAfford(COIN_COSTS.reset)}
           onPress={handleReset}
         />
         <Action
-          label="⏭"
-          caption={String(COIN_COSTS.skip)}
+          art={ACTION_ART.skip}
+          label={`Skip, ${COIN_COSTS.skip} coins`}
           affordable={canAfford(COIN_COSTS.skip)}
           onPress={handleSkip}
         />
@@ -358,16 +371,19 @@ export function GameScreen({ route, navigation }: Props) {
  * genuinely inert. `affordable` is different: an unaffordable action stays
  * tappable and explains itself, because a dead button reads as a broken UI
  * (DESIGN.md).
+ *
+ * The art carries the icon AND the price, so this renders no text — only the
+ * accessibility label spells it out, since a screen reader cannot read a PNG.
  */
 function Action({
+  art,
   label,
-  caption,
   onPress,
   disabled,
   affordable = true,
 }: {
+  art: number;
   label: string;
-  caption: string;
   onPress?: () => void;
   disabled?: boolean;
   affordable?: boolean;
@@ -377,13 +393,18 @@ function Action({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [
-        styles.action,
-        (disabled || !affordable) && styles.actionDisabled,
+        (disabled || !affordable) && styles.actionDim,
         pressed && styles.actionPressed,
       ]}>
-      <Text style={styles.actionLabel}>{label}</Text>
-      <Text style={styles.actionCaption}>🪙 {caption}</Text>
+      <Image
+        source={art}
+        style={styles.actionImage}
+        resizeMode="contain"
+        accessibilityIgnoresInvertColors
+      />
     </Pressable>
   );
 }
@@ -444,22 +465,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly',
     alignItems: 'flex-start',
   },
-  action: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Home.chrome,
-    borderWidth: 2,
-    borderColor: Home.chromeBorder,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    minWidth: 64,
-    minHeight: 58,
-  },
-  actionDisabled: { opacity: 0.45 },
-  actionPressed: { transform: [{ scale: 0.96 }] },
-  actionLabel: { fontSize: 22 },
-  actionCaption: { color: '#FFFFFF', fontSize: 11, marginTop: 2, fontWeight: '700' },
+  // Source art is square (1254x1254).
+  actionImage: { width: 70, height: 70 },
+  actionDim: { opacity: 0.45 },
+  actionPressed: { transform: [{ scale: 0.94 }] },
 
   deadEnd: {
     position: 'absolute',
