@@ -4,64 +4,64 @@
   "difficulty": "easy",
   "vehicles": [
     {
-      "id": "truck-1",
-      "type": "truck",
-      "x": 0,
-      "y": 1,
+      "id": "bus-1",
+      "type": "bus",
+      "x": 1,
+      "y": 4,
+      "width": 3,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "police-2",
+      "type": "police",
+      "x": 1,
+      "y": 2,
       "width": 1,
-      "height": 3,
+      "height": 2,
       "direction": "down",
       "color": "red"
     },
     {
-      "id": "car-2",
-      "type": "car",
-      "x": 2,
-      "y": 3,
-      "width": 1,
-      "height": 2,
-      "direction": "up",
-      "color": "blue"
-    },
-    {
-      "id": "car-3",
-      "type": "car",
-      "x": 3,
-      "y": 4,
+      "id": "ambulance-3",
+      "type": "ambulance",
+      "x": 4,
+      "y": 2,
       "width": 2,
       "height": 1,
-      "direction": "left",
-      "color": "yellow"
+      "direction": "right",
+      "color": "red"
     },
     {
-      "id": "car-4",
+      "id": "ambulance-4",
+      "type": "ambulance",
+      "x": 0,
+      "y": 1,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "police-5",
+      "type": "police",
+      "x": 0,
+      "y": 5,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "car-6",
       "type": "car",
-      "x": 1,
-      "y": 3,
+      "x": 5,
+      "y": 0,
       "width": 1,
       "height": 2,
-      "direction": "up",
-      "color": "green"
-    },
-    {
-      "id": "truck-5",
-      "type": "truck",
-      "x": 4,
-      "y": 1,
-      "width": 1,
-      "height": 3,
       "direction": "down",
-      "color": "purple"
-    },
-    {
-      "id": "truck-6",
-      "type": "truck",
-      "x": 5,
-      "y": 3,
-      "width": 1,
-      "height": 3,
-      "direction": "up",
-      "color": "orange"
+      "color": "blue"
     }
   ],
   "parMoves": 6

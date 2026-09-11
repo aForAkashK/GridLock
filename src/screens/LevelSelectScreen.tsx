@@ -50,6 +50,7 @@ export function LevelSelectScreen({ navigation }: Props) {
   const { width, height } = useWindowDimensions();
   const completed = usePlayerStore(s => s.completedLevels);
   const coins = usePlayerStore(s => s.coins);
+  const devToggleUnlockAll = usePlayerStore(s => s.devToggleUnlockAll);
   const [coinInfo, setCoinInfo] = useState(false);
 
   // Same cover maths as the other screens, so the grid tracks the painted sign
@@ -92,6 +93,24 @@ export function LevelSelectScreen({ navigation }: Props) {
       <View style={[styles.coins, { top: insets.top + Spacing.sm }]}>
         <CoinPill onAddCoins={() => setCoinInfo(true)} />
       </View>
+
+      {/* Testing shortcut. __DEV__ is false in release builds, so this is
+          stripped entirely and can never reach a player. */}
+      {__DEV__ ? (
+        <Pressable
+          onPress={() => devToggleUnlockAll(LEVELS.map(l => l.id))}
+          accessibilityRole="button"
+          accessibilityLabel="Developer: toggle unlock all levels"
+          style={({ pressed }) => [
+            styles.dev,
+            { top: insets.top + Spacing.sm + 52 },
+            pressed && styles.pressed,
+          ]}>
+          <Text style={styles.devText}>
+            {completed.length >= LEVELS.length ? 'DEV: lock' : 'DEV: unlock all'}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <ScrollView
         contentContainerStyle={[
@@ -185,6 +204,16 @@ const styles = StyleSheet.create({
   pressed: { transform: [{ scale: 0.94 }] },
 
   coins: { position: 'absolute', right: Spacing.md, zIndex: 3 },
+  dev: {
+    position: 'absolute',
+    left: Spacing.md,
+    zIndex: 4,
+    backgroundColor: 'rgba(230, 60, 60, 0.92)',
+    borderRadius: Radius.sm,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  devText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   tilePressed: { transform: [{ scale: 0.95 }] },

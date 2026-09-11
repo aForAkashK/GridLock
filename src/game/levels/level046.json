@@ -1,0 +1,118 @@
+{
+  "id": 46,
+  "gridSize": 6,
+  "difficulty": "hard",
+  "vehicles": [
+    {
+      "id": "car-1",
+      "type": "car",
+      "x": 2,
+      "y": 5,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "taxi-2",
+      "type": "taxi",
+      "x": 0,
+      "y": 2,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "truck-3",
+      "type": "truck",
+      "x": 5,
+      "y": 2,
+      "width": 1,
+      "height": 3,
+      "direction": "down",
+      "color": "blue"
+    },
+    {
+      "id": "truck-4",
+      "type": "truck",
+      "x": 3,
+      "y": 1,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "yellow"
+    },
+    {
+      "id": "bus-5",
+      "type": "bus",
+      "x": 1,
+      "y": 4,
+      "width": 3,
+      "height": 1,
+      "direction": "right",
+      "color": "green"
+    },
+    {
+      "id": "truck-6",
+      "type": "truck",
+      "x": 3,
+      "y": 0,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "purple"
+    },
+    {
+      "id": "police-7",
+      "type": "police",
+      "x": 1,
+      "y": 0,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "bus-8",
+      "type": "bus",
+      "x": 4,
+      "y": 3,
+      "width": 1,
+      "height": 3,
+      "direction": "up",
+      "color": "orange"
+    },
+    {
+      "id": "car-9",
+      "type": "car",
+      "x": 0,
+      "y": 4,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "car-10",
+      "type": "car",
+      "x": 1,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "blue"
+    },
+    {
+      "id": "car-11",
+      "type": "car",
+      "x": 2,
+      "y": 3,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "yellow"
+    }
+  ],
+  "parMoves": 12
+}

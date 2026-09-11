@@ -9,7 +9,7 @@
  * geometried, and with `parMoves` computed by the solver rather than by hand.
  *
  * Levels 1-6 are hand-authored as a teaching sequence, each introducing
- * exactly one idea. Levels 7-20 come from `tools/level-tools/generate-levels.ts`,
+ * exactly one idea. Levels 7-50 come from `tools/level-tools/generate-levels.ts`,
  * which generates candidates at random and keeps only those the solver proves
  * hit a target par and start with enough vehicles blocked to be a real puzzle.
  */
@@ -35,6 +35,36 @@ import level017 from './level017.json';
 import level018 from './level018.json';
 import level019 from './level019.json';
 import level020 from './level020.json';
+import level021 from './level021.json';
+import level022 from './level022.json';
+import level023 from './level023.json';
+import level024 from './level024.json';
+import level025 from './level025.json';
+import level026 from './level026.json';
+import level027 from './level027.json';
+import level028 from './level028.json';
+import level029 from './level029.json';
+import level030 from './level030.json';
+import level031 from './level031.json';
+import level032 from './level032.json';
+import level033 from './level033.json';
+import level034 from './level034.json';
+import level035 from './level035.json';
+import level036 from './level036.json';
+import level037 from './level037.json';
+import level038 from './level038.json';
+import level039 from './level039.json';
+import level040 from './level040.json';
+import level041 from './level041.json';
+import level042 from './level042.json';
+import level043 from './level043.json';
+import level044 from './level044.json';
+import level045 from './level045.json';
+import level046 from './level046.json';
+import level047 from './level047.json';
+import level048 from './level048.json';
+import level049 from './level049.json';
+import level050 from './level050.json';
 
 export const LEVELS: Level[] = [
   level001 as Level,
@@ -57,6 +87,36 @@ export const LEVELS: Level[] = [
   level018 as Level,
   level019 as Level,
   level020 as Level,
+  level021 as Level,
+  level022 as Level,
+  level023 as Level,
+  level024 as Level,
+  level025 as Level,
+  level026 as Level,
+  level027 as Level,
+  level028 as Level,
+  level029 as Level,
+  level030 as Level,
+  level031 as Level,
+  level032 as Level,
+  level033 as Level,
+  level034 as Level,
+  level035 as Level,
+  level036 as Level,
+  level037 as Level,
+  level038 as Level,
+  level039 as Level,
+  level040 as Level,
+  level041 as Level,
+  level042 as Level,
+  level043 as Level,
+  level044 as Level,
+  level045 as Level,
+  level046 as Level,
+  level047 as Level,
+  level048 as Level,
+  level049 as Level,
+  level050 as Level,
 ];
 
 /** The level after `id`, or undefined when the player has finished them all. */

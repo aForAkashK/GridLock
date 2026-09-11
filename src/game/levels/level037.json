@@ -1,0 +1,108 @@
+{
+  "id": 37,
+  "gridSize": 6,
+  "difficulty": "hard",
+  "vehicles": [
+    {
+      "id": "taxi-1",
+      "type": "taxi",
+      "x": 0,
+      "y": 4,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "car-2",
+      "type": "car",
+      "x": 1,
+      "y": 5,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "police-3",
+      "type": "police",
+      "x": 4,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "red"
+    },
+    {
+      "id": "police-4",
+      "type": "police",
+      "x": 5,
+      "y": 4,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
+    },
+    {
+      "id": "car-5",
+      "type": "car",
+      "x": 1,
+      "y": 1,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "blue"
+    },
+    {
+      "id": "car-6",
+      "type": "car",
+      "x": 0,
+      "y": 2,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "yellow"
+    },
+    {
+      "id": "car-7",
+      "type": "car",
+      "x": 4,
+      "y": 1,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "green"
+    },
+    {
+      "id": "police-8",
+      "type": "police",
+      "x": 2,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "red"
+    },
+    {
+      "id": "car-9",
+      "type": "car",
+      "x": 1,
+      "y": 2,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "purple"
+    },
+    {
+      "id": "car-10",
+      "type": "car",
+      "x": 4,
+      "y": 3,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "orange"
+    }
+  ],
+  "parMoves": 12
+}

@@ -26,6 +26,12 @@ type PlayerState = {
   setPremium: (value: boolean) => void;
   /** Re-reads MMKV after a launch merge overwrites it from the cloud. */
   hydrateFromStorage: () => void;
+
+  /**
+   * Testing only. Marks every level complete, or clears all progress if it is
+   * already unlocked. Guarded by __DEV__ at the call site so it cannot ship.
+   */
+  devToggleUnlockAll: (allIds: number[]) => void;
 };
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -63,6 +69,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setPremium: value => {
     storage.set(StorageKeys.premium, value);
     set({ premium: value });
+  },
+
+  devToggleUnlockAll: allIds => {
+    const alreadyAll = get().completedLevels.length >= allIds.length;
+    const next = alreadyAll ? [] : allIds;
+    setJSON(StorageKeys.completedLevels, next);
+    const level = alreadyAll ? 1 : allIds[allIds.length - 1];
+    storage.set(StorageKeys.currentLevel, level);
+    set({ completedLevels: next, currentLevel: level });
   },
 
   hydrateFromStorage: () => {

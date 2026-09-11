@@ -1,0 +1,118 @@
+{
+  "id": 50,
+  "gridSize": 6,
+  "difficulty": "hard",
+  "vehicles": [
+    {
+      "id": "truck-1",
+      "type": "truck",
+      "x": 3,
+      "y": 5,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "red"
+    },
+    {
+      "id": "taxi-2",
+      "type": "taxi",
+      "x": 3,
+      "y": 3,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "car-3",
+      "type": "car",
+      "x": 2,
+      "y": 1,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "blue"
+    },
+    {
+      "id": "taxi-4",
+      "type": "taxi",
+      "x": 3,
+      "y": 0,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "police-5",
+      "type": "police",
+      "x": 2,
+      "y": 4,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "car-6",
+      "type": "car",
+      "x": 4,
+      "y": 0,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "yellow"
+    },
+    {
+      "id": "ambulance-7",
+      "type": "ambulance",
+      "x": 0,
+      "y": 3,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
+    },
+    {
+      "id": "police-8",
+      "type": "police",
+      "x": 4,
+      "y": 1,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
+    },
+    {
+      "id": "car-9",
+      "type": "car",
+      "x": 0,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "green"
+    },
+    {
+      "id": "bus-10",
+      "type": "bus",
+      "x": 5,
+      "y": 2,
+      "width": 1,
+      "height": 3,
+      "direction": "down",
+      "color": "purple"
+    },
+    {
+      "id": "car-11",
+      "type": "car",
+      "x": 1,
+      "y": 4,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "orange"
+    }
+  ],
+  "parMoves": 12
+}

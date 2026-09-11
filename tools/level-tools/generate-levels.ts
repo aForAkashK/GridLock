@@ -14,13 +14,50 @@
 
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import type { Direction, Vehicle } from '../../src/game/models/Vehicle';
+import type { Direction, Vehicle, VehicleType } from '../../src/game/models/Vehicle';
 import type { Difficulty, Level } from '../../src/game/models/Level';
 import { createInitialState } from '../../src/game/models/GameState';
 import { legalMoves } from '../../src/game/engine/movement';
 import { validateLevel } from '../../src/game/engine/levelValidator';
+import { solve, VALIDATION_NODE_BUDGET } from '../../src/game/engine/solver';
 
 const COLORS = ['red', 'blue', 'yellow', 'green', 'purple', 'orange'];
+
+/**
+ * Vehicle types by footprint. Every sprite is used, not just car and truck —
+ * silhouette is one of the three cues a player reads a board by (DESIGN.md),
+ * and while every car shares one sprite, varying the TYPE is what makes a
+ * crowded board legible.
+ */
+const TYPES_3 = ['truck', 'bus'] as const;
+
+/**
+ * 2-cell vehicles are weighted toward `car`. Taxi, police and ambulance each
+ * have ONE fixed look, so a board full of them is as hard to tell apart as a
+ * board of identical cars. Cars carry the palette colour, which is what makes
+ * "move the blue one" possible — the specials stay as occasional accents.
+ */
+const TYPES_2: Array<[VehicleType, number]> = [
+  ['car', 0.6],
+  ['taxi', 0.14],
+  ['police', 0.13],
+  ['ambulance', 0.13],
+];
+
+/** One random draw either way, so the generator's RNG sequence is unchanged. */
+function pickWeighted(r: number, table: Array<[VehicleType, number]>): VehicleType {
+  let acc = 0;
+  for (const [type, weight] of table) {
+    acc += weight;
+    if (r < acc) {
+      return type;
+    }
+  }
+  return table[table.length - 1][0];
+}
+
+/** Types that take the level's palette colour; the rest have a fixed look. */
+const COLOURED = new Set<VehicleType>(['car', 'truck', 'bus']);
 
 /**
  * Deterministic PRNG (mulberry32) so a seed always yields the same board.
@@ -49,6 +86,7 @@ type Spec = {
 
 function randomBoard(random: () => number, spec: Spec): Vehicle[] {
   const placed: Vehicle[] = [];
+  let coloured = 0;
   const occupied = new Set<string>();
 
   for (let n = 0; n < spec.vehicles; n++) {
@@ -86,16 +124,25 @@ function randomBoard(random: () => number, spec: Spec): Vehicle[] {
         : (['up', 'down'] as Direction[]);
       const direction = axis[Math.floor(random() * axis.length)];
 
+      // Exactly ONE random() either way — keeping the RNG sequence identical is
+      // what lets the reweight change vehicle identities without changing any
+      // layout, par or solution.
+      const r = random();
+      const type: VehicleType =
+        length === 3 ? TYPES_3[Math.floor(r * TYPES_3.length)] : pickWeighted(r, TYPES_2);
+
       cells.forEach(c => occupied.add(c));
       placed.push({
-        id: `${length === 3 ? 'truck' : 'car'}-${n + 1}`,
-        type: length === 3 ? 'truck' : 'car',
+        id: `${type}-${n + 1}`,
+        type,
         x,
         y,
         width,
         height,
         direction,
-        color: COLORS[n % COLORS.length],
+        // Cycle colours across coloured vehicles only, so neighbouring cars
+        // differ. Fixed-look types ignore colour; 'red' is a placeholder.
+        color: COLOURED.has(type) ? COLORS[coloured++ % COLORS.length] : 'red',
       });
       break;
     }
@@ -133,11 +180,20 @@ function generate(spec: Spec): { level: Level; seed: number } | null {
       continue;
     }
 
-    const result = validateLevel(candidate);
-    if (!result.valid || result.parMoves === undefined) {
+    // Cheap gate first. `validateLevel` also measures worst-case HINT cost by
+    // re-solving from many reachable states, which is far more expensive than
+    // a single solve — no point paying it for a board whose par is out of band.
+    const solution = solve(createInitialState(candidate), VALIDATION_NODE_BUDGET);
+    if (!solution) {
       continue;
     }
-    if (result.parMoves < spec.minPar || result.parMoves > spec.maxPar) {
+    const par = solution.moves.length;
+    if (par < spec.minPar || par > spec.maxPar) {
+      continue;
+    }
+
+    const result = validateLevel(candidate);
+    if (!result.valid || result.parMoves === undefined) {
       continue;
     }
 
@@ -164,6 +220,30 @@ const SPECS: Spec[] = [
   { id: 19, gridSize: 6, difficulty: 'hard', vehicles: 9, minPar: 11, maxPar: 13 },
   { id: 20, gridSize: 6, difficulty: 'hard', vehicles: 9, minPar: 11, maxPar: 14 },
 ];
+
+/**
+ * Levels 21-50.
+ *
+ * Par tops out around 13-14 on a 6x6 board: par only exceeds the vehicle count
+ * when vehicles must move MORE THAN ONCE, and 36 cells leaves little room to
+ * shuffle. Pushing past that does not make boards harder, it makes them
+ * unsolvable — levels 29, 30 and 34 failed 60,000 attempts at par 14+.
+ *
+ * So these bands target what is actually reachable, and difficulty ramps on
+ * density and vehicle count instead. Real depth beyond this needs new
+ * mechanics (PRD section 9), not bigger numbers.
+ */
+for (let id = 21; id <= 50; id++) {
+  const step = id - 21; // 0..29
+  SPECS.push({
+    id,
+    gridSize: 6,
+    difficulty: id <= 35 ? 'medium' : 'hard',
+    vehicles: 9 + Math.floor(step / 12), // 9, 10, 11
+    minPar: 11 + Math.floor(step / 15), // 11, 12
+    maxPar: 14,
+  });
+}
 
 function main(): void {
   const failures: number[] = [];

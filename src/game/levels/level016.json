@@ -4,69 +4,59 @@
   "difficulty": "medium",
   "vehicles": [
     {
-      "id": "car-1",
-      "type": "car",
+      "id": "truck-1",
+      "type": "truck",
       "x": 2,
-      "y": 2,
+      "y": 1,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "red"
+    },
+    {
+      "id": "taxi-2",
+      "type": "taxi",
+      "x": 0,
+      "y": 4,
       "width": 2,
       "height": 1,
       "direction": "right",
       "color": "red"
     },
     {
-      "id": "car-2",
-      "type": "car",
-      "x": 5,
-      "y": 1,
-      "width": 1,
-      "height": 2,
-      "direction": "up",
-      "color": "blue"
-    },
-    {
       "id": "car-3",
       "type": "car",
-      "x": 0,
-      "y": 2,
-      "width": 2,
-      "height": 1,
-      "direction": "right",
-      "color": "yellow"
-    },
-    {
-      "id": "car-4",
-      "type": "car",
-      "x": 3,
+      "x": 1,
       "y": 1,
-      "width": 2,
-      "height": 1,
-      "direction": "left",
-      "color": "green"
-    },
-    {
-      "id": "car-5",
-      "type": "car",
-      "x": 2,
-      "y": 0,
       "width": 1,
       "height": 2,
       "direction": "down",
-      "color": "purple"
+      "color": "blue"
     },
     {
-      "id": "car-6",
-      "type": "car",
-      "x": 1,
+      "id": "taxi-4",
+      "type": "taxi",
+      "x": 2,
+      "y": 3,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "ambulance-5",
+      "type": "ambulance",
+      "x": 3,
       "y": 4,
-      "width": 2,
-      "height": 1,
-      "direction": "right",
-      "color": "orange"
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
     },
     {
-      "id": "car-7",
-      "type": "car",
-      "x": 4,
+      "id": "ambulance-6",
+      "type": "ambulance",
+      "x": 5,
       "y": 3,
       "width": 1,
       "height": 2,
@@ -74,14 +64,24 @@
       "color": "red"
     },
     {
+      "id": "car-7",
+      "type": "car",
+      "x": 0,
+      "y": 0,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "yellow"
+    },
+    {
       "id": "car-8",
       "type": "car",
       "x": 4,
-      "y": 0,
-      "width": 2,
-      "height": 1,
-      "direction": "left",
-      "color": "blue"
+      "y": 4,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "green"
     }
   ],
   "parMoves": 10

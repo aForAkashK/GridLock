@@ -1,0 +1,118 @@
+{
+  "id": 48,
+  "gridSize": 6,
+  "difficulty": "hard",
+  "vehicles": [
+    {
+      "id": "police-1",
+      "type": "police",
+      "x": 0,
+      "y": 3,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
+    },
+    {
+      "id": "car-2",
+      "type": "car",
+      "x": 2,
+      "y": 4,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "car-3",
+      "type": "car",
+      "x": 4,
+      "y": 5,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "blue"
+    },
+    {
+      "id": "ambulance-4",
+      "type": "ambulance",
+      "x": 2,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "car-5",
+      "type": "car",
+      "x": 0,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "yellow"
+    },
+    {
+      "id": "bus-6",
+      "type": "bus",
+      "x": 3,
+      "y": 4,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "green"
+    },
+    {
+      "id": "bus-7",
+      "type": "bus",
+      "x": 2,
+      "y": 3,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "purple"
+    },
+    {
+      "id": "bus-8",
+      "type": "bus",
+      "x": 2,
+      "y": 0,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "orange"
+    },
+    {
+      "id": "car-9",
+      "type": "car",
+      "x": 1,
+      "y": 3,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "police-10",
+      "type": "police",
+      "x": 5,
+      "y": 1,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "car-11",
+      "type": "car",
+      "x": 0,
+      "y": 5,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "blue"
+    }
+  ],
+  "parMoves": 12
+}

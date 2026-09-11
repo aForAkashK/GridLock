@@ -211,7 +211,11 @@ export function VehicleSprite({
 
       {/* The sprite is authored facing down, so it is drawn into an upright
           box the size of the vehicle's SHORT x LONG footprint and then rotated
-          into place. A 2x1 car therefore uses the same asset as a 1x2 one. */}
+          into place. A 2x1 car therefore uses the same asset as a 1x2 one.
+
+          `contain`, not `fill`: the art includes mirrors and wheels, so its
+          ratio is never exactly 1:2 or 1:3. Filling the box would stretch it;
+          containing it keeps the proportions and centres it in the cell. */}
       <Group
         origin={c}
         transform={[{ rotate: spriteRotation(vehicle.direction) }]}>
@@ -221,7 +225,7 @@ export function VehicleSprite({
           y={c.y - longSide / 2}
           width={shortSide}
           height={longSide}
-          fit="fill"
+          fit="contain"
         />
       </Group>
 

@@ -16,7 +16,7 @@ import type { Level } from '../models/Level';
 import { Timing } from '../../theme/tokens';
 import { VehicleSprite } from './VehicleSprite';
 import { createLayout, pxToCell } from './geometry';
-import { useVehicleImages } from './sprites';
+import { spriteKey, useVehicleImages } from './sprites';
 
 /** Small grace period so the exit animation always finishes before unmount. */
 const EXIT_GRACE_MS = 80;
@@ -59,7 +59,7 @@ export function GameBoard({
    * drawing a placeholder first makes a coloured box visibly morph into a car.
    * A board that appears complete a frame later is calmer than either.
    */
-  const spritesReady = toDraw.every(v => images[v.type] !== null);
+  const spritesReady = toDraw.every(v => images[spriteKey(v)] !== null);
 
   /**
    * Vehicles the engine has already removed but which are still driving off
@@ -147,7 +147,7 @@ export function GameBoard({
                   key={v.id}
                   vehicle={v}
                   layout={layout}
-                  sprite={images[v.type]!}
+                  sprite={images[spriteKey(v)]!}
                   blockedSignal={blockedVehicleId === v.id ? blockedAt : 0}
                   hinted={hintVehicleId === v.id}
                 />
@@ -157,13 +157,13 @@ export function GameBoard({
             // An undo can bring a vehicle back while its exit is still
             // playing; the live copy wins.
             .filter(v => !toDraw.some(t => t.id === v.id))
-            .filter(v => images[v.type] !== null)
+            .filter(v => images[spriteKey(v)] !== null)
             .map(v => (
               <VehicleSprite
                 key={`exit-${v.id}`}
                 vehicle={v}
                 layout={layout}
-                sprite={images[v.type]!}
+                sprite={images[spriteKey(v)]!}
                 exiting
               />
             ))}
