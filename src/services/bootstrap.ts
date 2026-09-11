@@ -49,7 +49,10 @@ export async function bootstrap(): Promise<BootstrapResult> {
   try {
     const user = await ensureSignedIn();
     uid = user.uid;
-  } catch {
+  } catch (e) {
+    if (__DEV__) {
+      console.warn('[bootstrap] sign-in failed:', String(e));
+    }
     // Offline first launch, or Firebase misconfigured. Play locally; the next
     // launch will try again and the merge rules make catching up safe.
     return { uid: null, merge: 'skipped' };
@@ -69,8 +72,14 @@ export async function bootstrap(): Promise<BootstrapResult> {
     }
 
     startSyncQueue();
+    if (__DEV__) {
+      console.log(`[bootstrap] uid=${uid} merge=${outcome}`);
+    }
     return { uid, merge: outcome };
-  } catch {
+  } catch (e) {
+    if (__DEV__) {
+      console.warn('[bootstrap] cloud read failed:', String(e));
+    }
     startSyncQueue();
     return { uid, merge: 'skipped' };
   }

@@ -17,6 +17,17 @@ rules_version = '2';
  * these rules must drop client writes to `coins` entirely.
  */
 service cloud.firestore {
+
+  // `is number`, not `is int`: JS has one number type, and whether the client
+  // SDK encodes 110 as an integer or a double is its choice. `is int` would
+  // reject every write the moment it picks double.
+  function isValidPlayerDoc(data) {
+    return data.coins is number
+           && data.coins >= 0
+           && data.syncVersion is number
+           && data.syncVersion >= 0;
+  }
+
   match /databases/{database}/documents {
 
     match /players/{uid} {
@@ -47,9 +58,3 @@ service cloud.firestore {
   }
 }
 
-function isValidPlayerDoc(data) {
-  return data.coins is int
-         && data.coins >= 0
-         && data.syncVersion is int
-         && data.syncVersion >= 0;
-}

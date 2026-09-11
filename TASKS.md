@@ -236,8 +236,9 @@ look for a rebuilt grid before blaming level design.
 - [x] `bootstrap.ts` — runs alongside first render, never rejects, 8s cloud cap
 - [x] Flush on level complete (third trigger, alongside background and idle)
 - [x] `firestore.rules` written
-- [ ] **Enable Anonymous sign-in in the Firebase console** ← blocking
-- [ ] Deploy the rules: `firebase deploy --only firestore:rules`
+- [x] Enable Anonymous sign-in in the Firebase console
+- [x] Create the Firestore database (`(default)`, asia-south1 — permanent)
+- [x] Deploy the rules (`firebase deploy --only firestore:rules`; config in `firebase.json`)
 - [ ] Silent Play Games / Game Center link ← blocked on OAuth config
 - [ ] `SaveProgressPrompt` at the milestone ← gated off until linking works
 - [ ] Handle `credential-already-in-use` — offer to switch to the cloud save
@@ -301,3 +302,33 @@ whole point of `bootstrap()` never rejecting.
 - **`npm audit`** reports vulnerabilities from the install — triage before
   release.
 - **Android release signing** is unconfigured.
+
+
+### Phase 8 verified on device (2026-09-11)
+
+| Check | Evidence |
+|---|---|
+| Anonymous sign-in | `signInAnonymously:onComplete:success` |
+| Write lands | `[sync] wrote coins=130 v3`, acknowledged by the server |
+| Launch merge, in sync | `merge=local_wins` |
+| Restore when local storage is lost | MMKV deleted, player kept → `merge=cloud_wins`, HUD shows 130 not 100 |
+| Offline earn | Tap resolved instantly in airplane mode; write drained on reconnect (`coins=140 v4`) |
+| Rejected write self-heals | After PERMISSION_DENIED, the next coin change re-queued and succeeded |
+
+**Gotchas hit, worth remembering:**
+- Enabling a sign-in method does NOT create a database. Writes fail `NOT_FOUND`
+  until Firestore → Create database is done.
+- Freshly deployed rules took ~1 minute to take effect on a new database; the
+  first requests were `PERMISSION_DENIED` with correct rules.
+- The rules use `is number`, not `is int` — the client SDK decides the encoding.
+- Sync errors are swallowed for players; `[sync]` / `[bootstrap]` log lines in
+  `__DEV__` builds are the only way to see them.
+
+**Gap found: level progress is not synced.** Only `coins` and `syncVersion` go
+to the cloud. A restore brings coins back but resets the player to Level 1.
+- [ ] Sync `completedLevels` / `currentLevel` alongside coins (same queue, same
+      `syncVersion` merge; union of completed levels is safe to take)
+
+**Still not testable:** reinstall on Android without a linked account — the
+anonymous UID is wiped with the app, so there is nothing to restore to. That
+needs the Google / Play Games link (blocked on an OAuth client in the console).

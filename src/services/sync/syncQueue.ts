@@ -94,7 +94,15 @@ export function flush(): void {
       updatedAt: serverTimestamp(),
     },
     { merge: true },
-  ).catch(() => {
+  ).then(() => {
+    if (__DEV__) {
+      console.log(`[sync] wrote coins=${write.balance} v${write.version}`);
+    }
+  }).catch((e: unknown) => {
+    // Logged in dev only — otherwise a failing sync is invisible while testing.
+    if (__DEV__) {
+      console.warn('[sync] write failed:', String(e));
+    }
     // Deliberately swallowed. A failed sync must never surface to a player
     // mid-level, and must never block. The local balance is already correct;
     // the next mutation re-queues a write with a higher syncVersion, so a lost
