@@ -3,6 +3,7 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 // Must come after the Android plugin. Processes google-services.json.
 apply plugin: "com.google.gms.google-services"
+apply plugin: "com.google.firebase.crashlytics"
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -59,7 +60,7 @@ react {
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -73,6 +74,19 @@ def enableProguardInReleaseBuilds = false
  * this variant is about 6MiB larger per architecture than default.
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+
+// Local secrets are ignored; CI may provide the equivalent environment variables.
+def signingProperties = new Properties()
+def signingFile = rootProject.file("signing.properties")
+if (signingFile.exists()) signingFile.withInputStream { signingProperties.load(it) }
+def uploadSetting = { name, env -> System.getenv(env) ?: signingProperties.getProperty(name) }
+def uploadStoreFile = uploadSetting("storeFile", "GRIDLOCK_UPLOAD_STORE_FILE")
+def uploadStorePassword = uploadSetting("storePassword", "GRIDLOCK_UPLOAD_STORE_PASSWORD")
+def uploadKeyAlias = uploadSetting("keyAlias", "GRIDLOCK_UPLOAD_KEY_ALIAS")
+def uploadKeyPassword = uploadSetting("keyPassword", "GRIDLOCK_UPLOAD_KEY_PASSWORD")
+def hasUploadSigning = uploadStoreFile && uploadStorePassword && uploadKeyAlias && uploadKeyPassword
+// AGP 9 includes the producer task name in the merged-library output path.
+def crashlyticsNativeDir = layout.buildDirectory.dir("intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib")
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -90,8 +104,18 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        manifestPlaceholders = [usesCleartextTraffic: "false"]
+        buildConfigField "boolean", "QA_ENABLED", "false"
     }
     signingConfigs {
+        release {
+            if (hasUploadSigning) {
+                storeFile file(uploadStoreFile)
+                storePassword uploadStorePassword
+                keyAlias uploadKeyAlias
+                keyPassword uploadKeyPassword
+            }
+        }
         debug {
             storeFile file('debug.keystore')
             storePassword 'android'
@@ -101,19 +125,45 @@ android {
     }
     buildTypes {
         debug {
+            manifestPlaceholders = [usesCleartextTraffic: "true"]
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            firebaseCrashlytics {
+                nativeSymbolUploadEnabled true
+                unstrippedNativeLibsDir crashlyticsNativeDir.get().asFile
+            }
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
+        // Release-mode timing without preview hooks; debug certificate lets
+        // local testers update the development app without clearing its save.
+        performance {
+            initWith release
+            firebaseCrashlytics { nativeSymbolUploadEnabled false; mappingFileUploadEnabled false }
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            debuggable false
+            minifyEnabled true
+            buildConfigField "boolean", "QA_ENABLED", "false"
+        }
+        qa {
+            initWith release
+            firebaseCrashlytics { nativeSymbolUploadEnabled false; mappingFileUploadEnabled false }
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            debuggable false
+            minifyEnabled true
+            buildConfigField "boolean", "QA_ENABLED", "true"
+        }
+
     }
 }
 
 dependencies {
+    // Already present via GMA; direct access enables supported on-demand startup.
+    implementation("androidx.work:work-runtime:2.7.0")
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
@@ -121,5 +171,47 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+// Never silently ship a release signed with the shared debug key.
+tasks.configureEach { task ->
+    if (task.name == "uploadCrashlyticsSymbolFileRelease") {
+        task.dependsOn("archiveCrashlyticsSymbolsRelease")
+    }
+    if (task.name == "generateCrashlyticsSymbolFileRelease" || task.name == "injectCrashlyticsBuildIdsRelease") {
+        task.dependsOn("mergeReleaseNativeLibs")
+    }
+    if (task.name == "bundleRelease") {
+        task.doLast {
+            if (fileTree(crashlyticsNativeDir).matching { include "**/*.so" }.isEmpty()) {
+                throw new GradleException("Release native symbols missing. Check the AGP merged-native-libraries path before shipping.")
+            }
+        }
+    }
+    if (task.name == "validateSigningRelease") {
+        task.doFirst {
+            if (!hasUploadSigning) throw new GradleException("Production signing missing. See RELEASE_SIGNING.md; debug keys are never used for release.")
+        }
+    }
+}
+
+// The uploader deletes generated .sym files after sending them. Preserve a
+// private build companion before upload; it is never packaged into the app.
+tasks.register("archiveCrashlyticsSymbolsRelease", Zip) {
+    dependsOn("generateCrashlyticsSymbolFileRelease")
+    from(layout.buildDirectory.dir("crashlytics/release/nativeSymbols")) {
+        include "**/*.sym"
+    }
+    destinationDirectory = layout.buildDirectory.dir("outputs/native-debug-symbols/release")
+    archiveFileName = "crashlytics-native-symbols.zip"
+}
+
+// Metro copies current imports without removing old generated drawables.
+// Clear only this task's generated image output when bundling actually runs.
+// Otherwise removing an asset import can leave its image in later releases.
+tasks.withType(com.facebook.react.tasks.BundleHermesCTask).configureEach { bundleTask ->
+    bundleTask.doFirst {
+        project.delete(bundleTask.resourcesDir.get().asFile)
     }
 }

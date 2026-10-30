@@ -326,9 +326,352 @@ whole point of `bootstrap()` never rejecting.
 
 **Gap found: level progress is not synced.** Only `coins` and `syncVersion` go
 to the cloud. A restore brings coins back but resets the player to Level 1.
-- [ ] Sync `completedLevels` / `currentLevel` alongside coins (same queue, same
-      `syncVersion` merge; union of completed levels is safe to take)
+- [x] Sync `completedLevels` / `currentLevel` alongside coins
+  - Merged by UNION, not by `syncVersion`: progress only grows, so combining
+    both copies is always right and a stale copy can never erase a level.
+  - The queue now writes a snapshot of local state at flush time, so a level's
+    coin reward and its progress go up in one write.
+  - Verified: local storage wiped, player kept → `merge=cloud_wins
+    progress=restored`, Home showed "Continue · Level 20" with 300 coins from
+    real play, not Level 1.
+  - `devToggleUnlockAll` is deliberately not synced — with union merge it would
+    make "unlock all" permanent in the cloud.
 
 **Still not testable:** reinstall on Android without a linked account — the
 anonymous UID is wiped with the app, so there is nothing to restore to. That
 needs the Google / Play Games link (blocked on an OAuth client in the console).
+
+### Solver and authoring tooling (2026-10-26)
+
+- [x] Share occupancy calculations across successor moves without duplicating rules
+- [x] Exact A* solver; compare shortest par against exhaustive BFS
+- [x] Configurable seeded generator with protected outputs and batch quality gates
+- [x] Reject rotated/cosmetic duplicate layouts
+- [x] Store accepted seeds, settings and difficulty metrics with each candidate
+- [x] Sample hint latency before exporting; share sampling with `bench:hints`
+- [x] Export five unregistered candidates in `generated-levels/preview-51-55`
+- [ ] Playtest preview candidates and calibrate difficulty from player data
+- [ ] Profile release builds on mid-range Android (desktop timings are not device timings)
+
+### Automatic level delivery (2026-10-26)
+
+- [x] Reactive campaign combines bundled 1–50 with synchronous MMKV content cache
+- [x] Background public catalog download, timeout, throttling and foreground retries
+- [x] Defer processing/install while a puzzle is active; preserve board/undo identities
+- [x] Version/schema/asset compatibility, shared engine geometry and append-only IDs
+- [x] Cumulative release tooling: exact par, solvability, duplicates and hint latency gates
+- [x] Dedicated Firebase Hosting target and predeploy comparison with the live catalog
+- [x] Publish revision 1 (levels 51–55) and verify it with the actual app transport/parser
+- [x] TypeScript, lint, 387 tests, bundled-level validation and hint benchmarks pass
+- [ ] Device check: 55 levels online, Next from 50 to 51, offline restart, update during play
+- [ ] Release the mobile app update that introduces delivery (future compatible batches need only JSON publication)
+
+Publishing and compatibility details: `level-content/README.md`.
+
+### First release implementation (2026-10-26)
+
+- [x] Bundle 100 levels; preserve immutable 51–55; reveal chapters of 50
+- [x] Dynamic 6×6 / 7×7 / 8×8 grid and virtualized selection
+- [x] Version 2 future-content channel with legacy v1 preserved
+- [x] Free restart, native preloaded audio/haptics, reduced motion and screen-reader targets
+- [x] Google link/restore with durable offline retry and cloud coin precedence
+- [x] Configure upload signing, generate private ignored key, add CI and release pages
+- [x] 603 tests and 100-level solver validation
+- [ ] Full human campaign difficulty pass and physical-device profiling
+- [ ] Interactive Google restore acceptance, store console/distribution setup and submission
+
+See RELEASE_CHECKLIST.md for current acceptance status; older snapshots above are historical.
+
+### Cartoon audio and music (2026-10-26)
+
+- [x] Replace6 simple tones with original cartoon cues; wire coin rewards and navigation/action taps
+- [x] Compose and compress original34-second toy-town music,about250KB
+- [x] Native loop, background pause, Android focus/duck and iOS interruption handling
+- [x] Persist independent music toggle and volume; scrollable Settings
+- [x] 606 tests, TypeScript/lint and Android/iOS builds
+- [ ] Human listening approval and physical-device route/interruption acceptance
+
+### Performance and asset management (2026-10-26)
+
+- [x] Reuse4 preblurred shadow textures; memoize unchanged vehicles and board
+- [x] Add imported-WebP and native-audio budget audit to CI
+- [x] Inventory runtime artwork1.92MiB and vehicle pixel cache10.40MiB
+- [x] 609tests,TypeScript/lint,asset audit and100-level validation; signed bundle build
+- [x] Minified emulator8×8 visual check and real-tap level80 victory
+- [ ] User physical-device frame/memory/thermal acceptance
+
+Ads,coin earning,skin packs and purchases are future work; no monetization was implemented in this change.
+
+### Daily rewards and economy values (2026-10-26)
+
+- [x] Unlock Home Daily and show7-step streak rewards with local-midnight availability
+- [x] Once-per-date claim, missed-day reset, day7+ cap and backward-clock guard
+- [x] Persist receipt/balance/version through a recoverable local intent; sync in background
+- [x] Reconcile daily receipts on launch and Google account recovery
+- [x] Reuse existing WebP; no new package or generated artwork
+- [x] Central policy: ad50/max3 daily, standard skin300, special900, themed pack1800 (planned only)
+- [x] 629 tests including repeated claims, each interrupted write, midnight/foreground timers and restore policy
+- [ ] Ad SDK/verified rewards, cosmetic inventory/checkout and real-money purchase verification (future work)
+
+### Cartoon Daily UI (2026-10-26)
+
+- [x] Follow user-supplied reference: calendar banner, beveled blue panel,4+3 reward grid,gold amounts and raised button
+- [x] Use the clean `levels_bg.webp` variant requested in the latest instruction; preserve the original Levels art
+- [x] Ship only55KB transparent header WebP; retain generated concept sources outside runtime imports
+- [x] Keep reward logic,amounts,claim controls and accessible labels live
+- [x] 629 tests,TypeScript,lint and asset budgets pass
+
+### Daily font and text-colour pass (2026-10-27)
+
+- [x] Bundle43KB Fredoka One font and license on Android/iOS
+- [x] Apply rounded display typography to Daily headings,numbers,tiles and button
+- [x] Dark-blue collected label,dark-green claim label and reduced text shadows
+- [x] Extend asset audit to verify font/license copies and64KiB font budget
+- [x] 629 tests,TypeScript,lint,asset budgets and both native builds pass
+
+### Consistent back button (2026-10-27)
+
+- [x] Generate glossy blue back art from the Home settings-icon master
+- [x] Convert to a lightweight256px WebP and register one shared resolver/component
+- [x] Replace individual back controls on Game,Levels,Daily and Settings
+- [x] Add the same back control to the Shop placeholder
+- [x] 629 tests,TypeScript,lint and asset budgets pass; test APK/release bundle build and Daily visual check complete
+
+### Public publisher identity (2026-10-27)
+
+- [x] Use Developed by AksSoft instead of the personal developer name
+- [x] Add a direct developer-portfolio link in Settings
+- [x] Update public support/privacy pages and store-release metadata; preserve the portfolio URL
+- [x] 629 tests,TypeScript/lint and Android test/release builds pass; public pages deployed
+
+
+### Offline Awards (2026-10-28)
+
+- [x] Implement 10 achievements, 950 total one-time coins, manual collection and Home availability badge
+- [x] Track unique perfect replays and best observed daily streak; count existing completions
+- [x] Recover interrupted local claims and merge history with the existing cloud save without adding balances
+- [x] Reuse existing city/trophy/back art and font; virtualize the list
+- [x] TypeScript, lint, 656 tests and asset audit pass; Android performance APK and signed release bundle build
+- [x] Inspect native Awards screen and scrolling on emulator; leave available rewards unclaimed for user testing
+- [ ] User acceptance of reward collection/account restore on a real device
+
+
+### Garage and local coin history (2026-10-28)
+
+- [x] Add Red Racer at 300 earned coins; preserve the free classic fleet and other colour cues
+- [x] Preview art, confirm purchases, browse owned inventory and equip/revert cosmetics
+- [x] Durable purchase intent includes deduction, ownership and history; recover before cloud merge
+- [x] Sync ownership/equipment using the existing player save; no new backend/package
+- [x] Keep latest 200 local coin-history entries for gameplay, rewards and purchases; mark restored balances as checkpoints
+- [x] Optimize generated master-derived artwork to 43 KiB WebP; asset budgets pass
+- [x] TypeScript, lint and 678 tests pass; Android test APK and signed release bundle build
+- [x] Native Shop preview, Inventory, History and confirmation/cancel inspected on emulator; no purchase made from the user's balance
+- [ ] User acceptance of purchase/equip and real-device gameplay appearance
+
+
+### Shop reference layout (2026-10-28)
+
+- [x] Replace large Garage cards with SHOP/cones art, Cars/Trucks/Buses tabs and a tinted three-column grid
+- [x] Keep existing six classic colours free in each category; support enlarged asset previews
+- [x] Preserve Red Racer purchase/equip, Inventory and Coin History controls
+- [x] Reuse city background and all vehicle art; add only 41 KiB transparent header WebP
+- [x] One static Skia surface draws all grid gradients/buttons, with native accessible controls
+- [x] TypeScript, lint, 678 tests, asset audit and Android APK/release bundle pass
+- [x] Inspect native grid/header layout, category switching and enlarged preview on emulator; no coins spent
+
+
+### Shop sale items and exclusive equipment (2026-10-28)
+
+- [x] Remove the free fleet from Shop; show only sale cosmetics with Owned or catalog price
+- [x] Inventory shows Default equipped initially and Equip on alternatives; tap image/button to switch
+- [x] Persist one independent choice per car/truck/bus category and apply it through the sprite resolver
+- [x] Preserve Red Racer entitlement and original red-car-only replacement; free colours cost nothing
+- [x] Journal category selection with no coin change/history entry; include equipment in existing cloud restore/merge
+- [x] TypeScript, lint, 690 tests, asset audit and Android APK/release bundle pass
+- [x] Native check: Sky Blue equips and Default deselects, balance remains855; Level19 displays blue compact cars with original bus/truck/ambulance art and zero moves
+
+
+### Exact-colour skins and purchase popup correction (2026-10-28)
+
+- [x] Remove erroneous category-wide colour overrides; preserve original mixed-colour fleet
+- [x] Catalog declares type/colour replacements; normalized owned slot mappings select each appearance independently
+- [x] Migrate old Red Racer selection and discard classic_colour/category overrides without losing purchases
+- [x] Default inventory entries restore only their matching slot; purchased skins deselect only that slot's default
+- [x] Replace platform Alert with a blue/cream cartoon purchase modal, actual preview, price, balance, Cancel/Close/Buy and inline errors
+- [x] TypeScript, lint, 697 tests, asset audit and Android test/release builds pass
+- [x] Native purchase popup inspected on portrait emulator with real preview, 300-coin price and 895-coin balance; Cancel tested without purchase
+- [x] Native Level23 check confirms original mixed-colour cars/buses/trucks restored, zero moves and895 coins; no purchase made
+
+
+### Shop banner subtitle alignment (2026-10-28)
+
+- [x] Match the header's3:1 artwork ratio and center live text inside proportional blue-strip bounds
+- [x] Remove bottom-margin positioning/Android font padding; fit a single line across widths
+- [x] Native emulator visual check confirms the subtitle is centered; no new art added
+- [x] TypeScript, lint, 697 tests and Android test/release builds pass
+
+
+### Ads and earned-coin ad-free passes (2026-10-28)
+
+- [x] Native Google Mobile Ads/UMP integration with official test units and deferred initialization
+- [x] Rewarded coin ladder10/15/20/25/35/50 then10 without daily cap; midnight reset
+- [x] Results-transition interstitial on real wins, immediate navigation for no-fill/failure/pass holders
+- [x] Coin passes7days/1000 and30days/3000 with explicit confirmation, extension and duplicate protection
+- [x] Dedicated five-ad pass flow, separate progress, no coin double reward,24-hour expiry after fifth completion
+- [x] Durable receipt/counter/expiry transaction and existing player-save merge/recovery
+- [x] Coins & Ad-Free entry from coin+ and Settings, privacy choices and native audio pause/resume
+- [x] Test config validator and production release gate (currently blocked by absent publisher AdMob IDs)
+- [x] Fix minified Room constructor crash; defer WorkManager initialization off first-screen startup
+- [x] TypeScript/lint and733 tests pass; Android APK/AAB and iOS simulator native build succeed
+- [x] Actual Google rewarded test ad grants10 coins; interstitial between replayed levels1/2 displays/closes correctly
+- [ ] Publisher creates AdMob account/apps/ad units and consent messages, supplies IDs and passes production config gate
+- [ ] Physical-device/internal-store live configuration acceptance and final store privacy/Contains Ads declarations
+- [x] Native midnight/restart check retains3/5 day-pass progress without coin-ladder advancement
+- [x] Five native Google rewarded pass ads activate24-hour ad-free expiry; coin balance remains640 and optional coin ads stay available
+
+
+### Neutral coin+ entry (2026-10-29)
+
+- [x] Replace Watch ads / Ad-free passes with Coins & Ad-Free
+- [x] Use Your coins heading and remove the ad-watching prompt from the popup
+- [x] Keep existing rewards/passes navigation; do not advertise unavailable real-money purchases
+- [x] TypeScript, lint,733 tests and Android APK/AAB builds pass
+
+### Cartoon coin information popup (2026-10-29)
+
+- [x] Match blue/gold reference with live title, balance, level reward and glossy actions
+- [x] Reuse existing coin artwork; preserve neutral wording and insufficient-funds entry
+- [x] Add scrollable modal and hardware Back dismissal; keep controls accessible
+- [x] TypeScript, lint and733 tests pass
+- [x] Android performance APK/signed bundle build; native portrait layout inspected with640-coin balance
+
+### Ad reward completion feedback (2026-10-29)
+
+- [x] Show saved daily coin-ladder completions in green with Completed/Next/Upcoming labels
+- [x] Keep the earned active five-ad pass at5/5 with full progress and Completed status
+- [x] Show actual expiry for the next pass; preserve partial progress and unlimited coin ads
+- [x] TypeScript/lint,733 tests and Android APK/AAB builds pass; emulator confirms six completed green coin tiles and active5/5 day pass with expiry
+
+### First-visit asset loading (2026-10-29)
+
+- [x] Inspect native loading: packaged Android resources already have no default fade; board sprites previously started decoding on board mount
+- [x] Warm upcoming-board sprites after Home artwork/idle time using existing shared decode cache
+- [x] Add bounded Android decoded-menu-cache warm-up, with local resources only and no new dependency
+- [x] Stop further scheduling on Home blur/background; preserve normal loading/retry on failure
+- [x] TypeScript,736 tests and unchanged WebP/audio/font budgets pass
+- [ ] Physical-device cold/warm launch and first-route latency/memory measurements
+- [x] Lint clean; Android performance APK/signed bundle builds pass; emulator cold launch, Daily artwork and Level27 mixed-colour board inspected without moving vehicles
+
+### Settings and deletion-request pages (2026-10-29)
+
+- [x] Fix edge-to-edge ad rows/account spacing with a shared padded, wrapping Settings layout
+- [x] Add explicit in-app account-deletion request and approved public support email
+- [x] Create dedicated deletion page and restyle privacy information from Dearfuture's card-based reference
+- [x] Keep game-specific disclosures, portfolio attribution and honest manual-email request semantics
+- [x] Document identity verification, session invalidation and manual Auth/player-document deletion; no user data deleted
+- [x] TypeScript/lint,736 tests and Android APK/AAB builds pass
+- [x] Firebase pages deployed; desktop/mobile layouts inspected; Settings deletion link opens the correct live page
+- [ ] Publisher monitors support inbox and manually processes verified deletion requests; no test request sent or account deleted
+
+### Direct in-app account deletion (2026-10-29)
+
+- [x] Explicit destructive confirmation and identity re-verification; supports anonymous and Google-linked accounts
+- [x] Atomically delete cloud save with a minimal security marker that blocks stale-session recreation
+- [x] Delete Firebase Auth identity, clear local records and offer an explicit fresh game
+- [x] Durable cloud/auth/local retry journal, global gate, sync/bootstrap protection and wrong-account guards
+- [x] Preserve web/email fallback, disclose retained marker and update public instructions/operator documentation
+- [x] 753 tests and isolated Firebase emulator rules/Auth-deletion checks pass; no real player account deleted
+- [ ] Disposable human Google-account deletion acceptance
+- [x] Firestore deletion rules and revised public pages deployed successfully
+- [x] Android performance APK/signed AAB builds pass; normal-app deletion warning inspected and Cancel verified with original Player ID retained
+
+### Cartoon deletion confirmation (2026-10-29)
+
+- [x] Replace platform deletion alert with reference-based red/cream modal, warning/trash symbols and glossy blue/red actions
+- [x] Keep native live warning copy, accessibility labels, scroll/wrap layout and hardware Back cancellation
+- [x] Preserve deletion service and guard duplicate confirmation/modal-to-Google handoff
+- [x] TypeScript/lint,753 tests and Android performance APK/signed AAB pass
+- [x] Portrait emulator layout inspected; Cancel closes the custom warning and original Player ID remains intact; no deletion performed
+
+### Smaller vehicle arrows (2026-10-29)
+
+- [x] Reduce arrow length and stroke while preserving readable direction cues and a thin dark outline
+- [x] Keep existing geometry, placement, movement and accessibility behavior
+- [x] TypeScript/lint and753 tests pass; no new assets/dependencies
+- [x] Android APK/signed AAB builds pass; Level15 checked in emulator with smaller outlined arrows across car/bus/ambulance art, zero moves
+
+
+### Gameplay, asset and responsive UI review (2026-10-29)
+
+- [x] Review main screens, inventory categories, transaction history and dialogs in minified Android builds
+- [x] Stress compact 360×640 dp / 150% text; fix cropped headings, crowded HUD, purchase labels, win stats and deletion actions
+- [x] Keep menu scrolling clear of status chrome and the Levels list below its painted title
+- [x] Native preview solutions for levels 1/60/80/100; blocked move, Hint, Undo, Restart, Replay and Next verified without spending coins
+- [x] Fix and verify result Home/back-stack navigation; preserve the user's save and restore emulator display settings
+- [x] TypeScript/lint,764 tests,100-level validation,asset budgets,hint benchmark and Android QA/performance/release builds pass
+- [x] Record native review/evidence in `release/QA_REVIEW_2026-10-29.md`
+- [ ] Physical-device performance/accessibility and iOS visual acceptance remain release checks
+
+
+### Physical Android sound-effects routing fix (2026-10-30)
+
+- [x] Diagnose connected Samsung SM-S938B: system stream muted, media stream audible; haptics confirmed working by user
+- [x] Route SoundPool through USAGE_GAME, retain sonification content and preloaded cues; no phone settings changed
+- [x] TypeScript/lint,764 tests,Android performance APK/signed release bundle pass; final AAB signature verified
+- [x] Install update with app data retained; physical-device diagnostics confirm SoundPool and BGM both use USAGE_GAME
+- [x] User confirmed movement/completion sound effects work on the physical phone after the update
+
+
+### Special-vehicle source resolution (2026-10-30)
+
+- [x] Confirm police95×238,ambulance110×246,taxi102×223 are low-resolution source WebPs; coloured cars are approximately243×512
+- [x] Confirm the shared Skia renderer decodes original files and uses contain sizing; no special-vehicle downsampling path
+- [x] User authorized generated replacements; derive from the red-car master, export243×512 transparent WebPs and replace all three sources
+- [x] Inspect native6×6/8×8 emulator boards and pass encoded/decoded budgets; real-phone comparison pending reconnection
+
+The earlier asset-budget audit did not enforce a minimum sprite resolution. No higher-resolution originals were found in the repository. Do not upscale the small files and describe the result as restored detail. Asset creation requires explicit user authorization overriding the repository's no-final-art rule.
+
+- [x] Archive original small files,1821px PNG masters,exact prompts and export commands; add a512px minimum-resolution audit gate
+- [x] TypeScript/lint,764 tests,asset audit and Android QA/performance/signed bundle builds pass
+
+
+### Less frequent level ads and Home Ad-Free shortcut (2026-10-30)
+
+- [x] Offer one cached level ad after every four completed real rounds; preserve skip/preview/ad-free behavior
+- [x] Persist local pacing across restart; skip unavailable opportunities without an immediate catch-up ad
+- [x] Guard background/concurrent-ad/save failure; keep rewarded ads and currency independent
+- [x] Add gold crossed-AD Home shortcut beside Settings, opening existing Coins & Ad-Free offers
+- [x] TypeScript/lint,778 tests,asset audit,Android QA/performance/signed AAB and bundle signature pass
+- [x] Native Home/destination/back checked at normal and compact150% text; restore display and original275-coin/current15 save
+
+Cadence is exercised through the coordinator and persistent-service tests. Native full interstitial cycling was not forced on the user's save; the emulator has an active pass. Production ads remain in the previously requested test mode.
+
+
+### Smaller phone-test APK (2026-10-30)
+
+- [x] Attribute144.2MB universal installer size primarily to native libraries for four CPU architectures; runtime artwork remains2.37MiB
+- [x] Preserve universal artifact and build an ARM64-only test installer,48.4MB, with identical JS/art/resource entries
+- [x] Install/start on the ARM64 emulator and document reproducible build flags; no app code/economy/quality change
+
+
+### Real-device win dialog and inventory correction (2026-10-30)
+
+- [x] Replace ordinary win overlay with a hardware-accelerated native modal; preserve delay and dismiss-before-action ordering
+- [x] Guard repeated actions and cancel pending reveal/dismiss work on reset/unmount
+- [x] Share explicit inventory card frames between native controls and static Skia art, eliminating independent flex wrapping
+- [x] Test fractional grid widths,large fonts,native reveal/reset,reward rerenders,duplicate taps and iOS dismissal handoff
+- [x] Verify Level15's9-move win and Replay on the connected OnePlus in safe preview mode
+- [x] Verify cars/trucks/buses in Inventory on the physical phone; restore normal build/Home with100 coins/level1 unchanged
+- [x] TypeScript/lint,789 tests,asset audit,ARM64 QA/performance builds,full release AAB and bundle signature pass
+
+### Release diagnostics (2026-10-30)
+
+- [x] Audit: Crashlytics was absent and analytics track was a stub
+- [x] Add matching native Crashlytics, bounded breadcrumbs/context, handled-error reporting and React recovery boundary
+- [x] Add local Support code, voluntary issue sharing, collection preference and deletion cleanup
+- [x] Add version-checked RNFB current-session collection fix and exact binary/map archive tool
+- [x] Document Firebase triage, alert setup, data handling and release symbolication; update privacy/support source pages
+- [x] Verify emulator non-fatal/native/JavaScript crash capture, HTTP200 transport, current-session collection off/on, Settings and support sharing
+- [x] Verify exact Hermes source-map decoding, ARM64 test installers, signed four-ABI release AAB, R8 upload and104 generated/uploaded native symbol files
+- [x] Build the iOS ARM64 simulator with Crashlytics and archive exact Android release companions; publish privacy/support updates
+- [ ] Owner acceptance: confirm test issues/custom keys in Firebase Console, choose/verify alert recipients and review Play Data safety diagnostics declarations; see release/DIAGNOSTICS_QA_2026-10-30.md

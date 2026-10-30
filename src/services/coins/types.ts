@@ -6,29 +6,31 @@
  * client implementation later without touching gameplay code.
  */
 
+import { DAILY_REWARDS } from "./economy";
+
 export type CoinReason =
-  | 'level_complete'
-  | 'daily_reward'
-  | 'rewarded_ad'
-  | 'achievement'
-  | 'iap'
-  | 'hint'
-  | 'undo'
-  | 'reset'
-  | 'skip';
+  | "level_complete"
+  | "daily_reward"
+  | "rewarded_ad"
+  | "achievement"
+  | "iap"
+  | "hint"
+  | "undo"
+  | "reset"
+  | "skip"
+  | "skin_purchase"
+  | "ad_free_pass";
 
 /** PRD section 20. Single source of truth for the economy. */
 export const COIN_REWARDS = {
   level_complete: 10,
-  daily_reward: 50,
-  rewarded_ad: 30,
-  achievement: 100,
+  daily_reward: DAILY_REWARDS[0],
 } as const;
 
 export const COIN_COSTS = {
   hint: 30,
   undo: 20,
-  reset: 10,
+  reset: 0,
   skip: 100,
 } as const;
 

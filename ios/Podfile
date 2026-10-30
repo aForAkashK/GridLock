@@ -15,6 +15,7 @@ require Pod::Executable.execute_command('node', ['-p',
 # frameworks do emit those headers while still linking statically, so app launch
 # pays no dynamic-load cost. See DECISIONS.md D-007.
 $RNFirebaseDisableSPM = true
+$RNGoogleMobileAdsAsStaticFramework = true
 
 platform :ios, min_ios_version_supported
 prepare_react_native_project!

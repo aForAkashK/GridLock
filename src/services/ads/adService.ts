@@ -1,33 +1,73 @@
-/**
- * Ads — PRD sections 21 and 23. Not wired for MVP v0.1.
- *
- * Two hard rules, enforced here rather than at call sites:
- *   - An interstitial never interrupts active gameplay. It may only be shown
- *     on the level-complete screen, at most every 3-4 completed levels.
- *   - Premium disables interstitial and banner ads. Rewarded ads stay, because
- *     they are opt-in and the player chose them.
- */
-
-const INTERSTITIAL_EVERY_N_LEVELS = 4;
-
-export type RewardedResult = { watched: boolean; coinsGranted: number };
-
-export function shouldShowInterstitial(args: {
-  completedLevelCount: number;
-  premium: boolean;
-}): boolean {
-  if (args.premium) {
-    return false;
+import { breadcrumb, diagnosticContext } from "../diagnostics/client";
+import { isSaveReady, setSaveReady, onSaveReady } from "../auth/saveReadiness";
+import { AppState } from "react-native";
+import { create } from "zustand";
+import { AdCoordinator, type AdState } from "./coordinator";
+import { createNativeAd, initializeAds, privacyChoices } from "./sdkAdapter";
+import {
+  grantCompletedReward,
+  hasAdFree,
+  prepareReward,
+} from "./rewardService";
+import { usePlayerStore } from "../../state/playerStore";
+import { setAdAudioFocus } from "../audio/audioService";
+import { levelAdBreak } from "./levelCadence";
+let privacyBusy = false;
+export function setAdsSaveReady(ready: boolean) {
+  diagnosticContext({ saveReady: ready });
+  setSaveReady(ready);
+}
+export const ads = new AdCoordinator({
+  initialize: () => initializeAds(setAdAudioFocus),
+  create: createNativeAd,
+  now: Date.now,
+  foreground: () =>
+    AppState.currentState === "active" && !privacyBusy && isSaveReady(),
+  adFree: hasAdFree,
+  levelAdBreak,
+  prepare: prepareReward,
+  grant: grantCompletedReward,
+  refresh: () => usePlayerStore.getState().hydrateFromStorage(),
+  audio: setAdAudioFocus,
+});
+onSaveReady((ready) => {
+  if (ready) ads.warm();
+});
+export const useAdStore = create<AdState>(() => ads.state);
+ads.subscribe((state) => {
+  const previous = useAdStore.getState();
+  useAdStore.setState(state);
+  if (previous.showing !== state.showing) {
+    diagnosticContext({ adShowing: state.showing });
+    breadcrumb(state.showing ? "ads.opened" : "ads.closed");
   }
-  return args.completedLevelCount % INTERSTITIAL_EVERY_N_LEVELS === 0;
+});
+export function startAds(): () => void {
+  const timer = setTimeout(() => {
+    ads.start();
+  }, 1500);
+  const listener = AppState.addEventListener("change", (state) => {
+    if (state === "active" && !privacyBusy) {
+      ads.start();
+      ads.warm();
+    }
+  });
+  return () => {
+    clearTimeout(timer);
+    listener.remove();
+    ads.stop();
+  };
 }
-
-export async function showInterstitial(): Promise<void> {
-  // TODO(ads): v0.2
-  throw new Error('Not implemented');
-}
-
-export async function showRewarded(): Promise<RewardedResult> {
-  // TODO(ads): v0.2
-  throw new Error('Not implemented');
+export async function showAdPrivacy(): Promise<void> {
+  if (ads.state.showing) return;
+  privacyBusy = true;
+  setAdAudioFocus(true);
+  try {
+    const info = await privacyChoices();
+    ads.allow(info.allowed, info.privacyRequired);
+  } finally {
+    privacyBusy = false;
+    setAdAudioFocus(false);
+    ads.warm();
+  }
 }

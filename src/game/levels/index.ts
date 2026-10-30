@@ -65,6 +65,56 @@ import level047 from './level047.json';
 import level048 from './level048.json';
 import level049 from './level049.json';
 import level050 from './level050.json';
+import level051 from './level051.json';
+import level052 from './level052.json';
+import level053 from './level053.json';
+import level054 from './level054.json';
+import level055 from './level055.json';
+import level056 from './level056.json';
+import level057 from './level057.json';
+import level058 from './level058.json';
+import level059 from './level059.json';
+import level060 from './level060.json';
+import level061 from './level061.json';
+import level062 from './level062.json';
+import level063 from './level063.json';
+import level064 from './level064.json';
+import level065 from './level065.json';
+import level066 from './level066.json';
+import level067 from './level067.json';
+import level068 from './level068.json';
+import level069 from './level069.json';
+import level070 from './level070.json';
+import level071 from './level071.json';
+import level072 from './level072.json';
+import level073 from './level073.json';
+import level074 from './level074.json';
+import level075 from './level075.json';
+import level076 from './level076.json';
+import level077 from './level077.json';
+import level078 from './level078.json';
+import level079 from './level079.json';
+import level080 from './level080.json';
+import level081 from './level081.json';
+import level082 from './level082.json';
+import level083 from './level083.json';
+import level084 from './level084.json';
+import level085 from './level085.json';
+import level086 from './level086.json';
+import level087 from './level087.json';
+import level088 from './level088.json';
+import level089 from './level089.json';
+import level090 from './level090.json';
+import level091 from './level091.json';
+import level092 from './level092.json';
+import level093 from './level093.json';
+import level094 from './level094.json';
+import level095 from './level095.json';
+import level096 from './level096.json';
+import level097 from './level097.json';
+import level098 from './level098.json';
+import level099 from './level099.json';
+import level100 from './level100.json';
 
 export const LEVELS: Level[] = [
   level001 as Level,
@@ -117,6 +167,56 @@ export const LEVELS: Level[] = [
   level048 as Level,
   level049 as Level,
   level050 as Level,
+  level051 as Level,
+  level052 as Level,
+  level053 as Level,
+  level054 as Level,
+  level055 as Level,
+  level056 as Level,
+  level057 as Level,
+  level058 as Level,
+  level059 as Level,
+  level060 as Level,
+  level061 as Level,
+  level062 as Level,
+  level063 as Level,
+  level064 as Level,
+  level065 as Level,
+  level066 as Level,
+  level067 as Level,
+  level068 as Level,
+  level069 as Level,
+  level070 as Level,
+  level071 as Level,
+  level072 as Level,
+  level073 as Level,
+  level074 as Level,
+  level075 as Level,
+  level076 as Level,
+  level077 as Level,
+  level078 as Level,
+  level079 as Level,
+  level080 as Level,
+  level081 as Level,
+  level082 as Level,
+  level083 as Level,
+  level084 as Level,
+  level085 as Level,
+  level086 as Level,
+  level087 as Level,
+  level088 as Level,
+  level089 as Level,
+  level090 as Level,
+  level091 as Level,
+  level092 as Level,
+  level093 as Level,
+  level094 as Level,
+  level095 as Level,
+  level096 as Level,
+  level097 as Level,
+  level098 as Level,
+  level099 as Level,
+  level100 as Level,
 ];
 
 /** The level after `id`, or undefined when the player has finished them all. */

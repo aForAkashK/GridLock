@@ -1,0 +1,8 @@
+D/RNFBCrashlyticsInit( 6630): isCrashlyticsJavascriptExceptionHandlerChainingEnabled final value: true
+E/ReactNativeJS( 6630): [Error: Controlled QA JavaScript crash]
+D/FirebaseCrashlytics( 6630): disk worker: log non-fatal event to persistence
+W/unknown:BridgelessReact( 6630): ReactHost{0}.handleHostException(message = "Error: Controlled QA JavaScript crash, stack:
+E/AndroidRuntime( 6630): com.facebook.react.common.JavascriptException: Error: Controlled QA JavaScript crash, stack:
+D/FirebaseCrashlytics( 6630): Handling uncaught exception "com.facebook.react.common.JavascriptException: Error: Controlled QA JavaScript crash, stack:
+D/FirebaseCrashlytics( 6630): Crashlytics report successfully enqueued to DataTransport: 6AE49CBC0005000119E652C077EE8493
+D/FirebaseCrashlytics( 6630): Completed exception processing. Invoking default exception handler.

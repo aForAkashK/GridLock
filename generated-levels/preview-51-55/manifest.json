@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "specs": [
+    {
+      "id": 51,
+      "seed": 5100000,
+      "attempts": 10000,
+      "gridSize": 6,
+      "vehicles": 10,
+      "difficulty": "hard",
+      "minPar": 11,
+      "maxPar": 14,
+      "minBlocked": 2,
+      "minExtraMoves": 1,
+      "minExitWaves": 2,
+      "minScore": 8,
+      "maxHintMs": 6
+    },
+    {
+      "id": 52,
+      "seed": 5110000,
+      "attempts": 10000,
+      "gridSize": 6,
+      "vehicles": 10,
+      "difficulty": "hard",
+      "minPar": 11,
+      "maxPar": 14,
+      "minBlocked": 2,
+      "minExtraMoves": 1,
+      "minExitWaves": 2,
+      "minScore": 8,
+      "maxHintMs": 6
+    },
+    {
+      "id": 53,
+      "seed": 5120000,
+      "attempts": 10000,
+      "gridSize": 6,
+      "vehicles": 10,
+      "difficulty": "hard",
+      "minPar": 11,
+      "maxPar": 14,
+      "minBlocked": 2,
+      "minExtraMoves": 1,
+      "minExitWaves": 2,
+      "minScore": 8,
+      "maxHintMs": 6
+    },
+    {
+      "id": 54,
+      "seed": 5130000,
+      "attempts": 10000,
+      "gridSize": 6,
+      "vehicles": 10,
+      "difficulty": "hard",
+      "minPar": 11,
+      "maxPar": 14,
+      "minBlocked": 2,
+      "minExtraMoves": 1,
+      "minExitWaves": 2,
+      "minScore": 8,
+      "maxHintMs": 6
+    },
+    {
+      "id": 55,
+      "seed": 5140000,
+      "attempts": 10000,
+      "gridSize": 6,
+      "vehicles": 10,
+      "difficulty": "hard",
+      "minPar": 11,
+      "maxPar": 14,
+      "minBlocked": 2,
+      "minExtraMoves": 1,
+      "minExitWaves": 2,
+      "minScore": 8,
+      "maxHintMs": 6
+    }
+  ],
+  "levels": [
+    {
+      "id": 51,
+      "seed": 5100068,
+      "hintMs": 0.3400000000000034
+    },
+    {
+      "id": 52,
+      "seed": 5110058,
+      "hintMs": 0.4158749999999998
+    },
+    {
+      "id": 53,
+      "seed": 5120110,
+      "hintMs": 0.0957080000000019
+    },
+    {
+      "id": 54,
+      "seed": 5130070,
+      "hintMs": 0.08533300000004829
+    },
+    {
+      "id": 55,
+      "seed": 5140026,
+      "hintMs": 0.15266600000001063
+    }
+  ]
+}

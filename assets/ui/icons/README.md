@@ -1,0 +1,9 @@
+# Shared back button — 2026-10-27
+
+`back.webp` was generated with the built-in OpenAI image tool at the user's explicit request,using `settings.webp` as the edit target/style master. Source output: `/Users/akashkumar/.codex/generated_images/01a174d1-88e4-71b1-b77a-b4e8d068ed37/exec-c5f9e93e-e36f-47e3-858a-3ea191d3fcfe.png`.
+
+Converted to256×256 WebP,q92/alpha100/method6,about11KB. The original settings icon is unchanged. Transparent exterior,blue plastic rim,top-left shine and white/navy beveled chevron inherit the Home settings icon. Runtime usage is through `components/navigation/navigationAssets.ts` and the shared `BackButton` component (48-point image/control,8-point hit slop,matching0.92 press scale,accessible Back label). No runtime recolouring or shadow filters.
+
+Prompt: Use case: precise-object-edit. Edit the supplied Home settings icon into a MATCHING BACK BUTTON asset for the same mobile game. Change ONLY the central white gear: replace it with one bold,rounded,LEFT-POINTING CHEVRON (a back navigation arrow),white with the same dark navy outline and subtle bevel/shadow as the gear. Preserve the blue glossy rounded-square plastic button,its exact silhouette,framing and margins,thick dark rim,lower extrusion,top-left shine,blue colours,lighting and viewing angle. Keep the chevron comfortably centred,with generous spacing inside the rim and instantly readable at48px. The result must look like another button from exactly the same icon set. No words,no new symbols,no additional decorations,no watermark. Preserve the transparent background outside the button. Square canvas.
+
+Validation: Daily emulator screenshot at `release/screenshots/android-daily-shared-back.webp` confirms the icon matches the Home settings-button style. A source scan finds all Back accessibility labels centralized in the shared component; Game,Levels,Daily,Settings and Shop import it.629 tests,TypeScript,lint,asset budgets and Android phone-test/release builds pass.

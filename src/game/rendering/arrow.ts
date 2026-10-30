@@ -11,19 +11,19 @@
  * rather than four that can drift apart.
  */
 
-import { Skia, type SkPath } from '@shopify/react-native-skia';
-import type { Direction } from '../models/Vehicle';
+import { Skia, type SkPath } from "@shopify/react-native-skia";
+import type { Direction } from "../models/Vehicle";
 
 /** Radians to rotate a right-pointing arrow to face `direction`. */
 export function arrowRotation(direction: Direction): number {
   switch (direction) {
-    case 'right':
+    case "right":
       return 0;
-    case 'down':
+    case "down":
       return Math.PI / 2;
-    case 'left':
+    case "left":
       return Math.PI;
-    case 'up':
+    case "up":
       return -Math.PI / 2;
   }
 }
@@ -33,7 +33,7 @@ export function arrowRotation(direction: Direction): number {
  * `size` is the arrow's total length.
  */
 export function makeArrowPath(cx: number, cy: number, size: number): SkPath {
-  const p = Skia.Path.Make();
+  const p = Skia.PathBuilder.Make();
   const h = size / 2;
 
   // Stem — stops short of the head so the round caps do not overlap muddily.
@@ -45,14 +45,14 @@ export function makeArrowPath(cx: number, cy: number, size: number): SkPath {
   p.lineTo(cx + h * 0.62, cy);
   p.lineTo(cx - h * 0.02, cy + h * 0.58);
 
-  return p;
+  return p.detach();
 }
 
 /** Arrow length for a vehicle of this footprint. */
 export function arrowSize(cellSize: number): number {
-  return cellSize * 0.52;
+  return cellSize * 0.4;
 }
 
 export function arrowStroke(cellSize: number): number {
-  return Math.max(2.5, cellSize * 0.085);
+  return Math.max(2, cellSize * 0.052);
 }

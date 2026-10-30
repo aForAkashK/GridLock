@@ -92,7 +92,7 @@ function worstHintCost(level: Level): number {
   return worst;
 }
 
-export function validateLevel(level: Level): ValidationResult {
+export function validateLevelGeometry(level: Level): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
   // --- Geometry. Checked first: an overlapping board makes the solver's
@@ -147,6 +147,11 @@ export function validateLevel(level: Level): ValidationResult {
     }
   }
 
+  return issues;
+}
+
+export function validateLevel(level: Level): ValidationResult {
+  const issues = validateLevelGeometry(level);
   if (issues.length > 0) {
     return { valid: false, issues };
   }

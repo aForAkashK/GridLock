@@ -1,3 +1,15 @@
+import { monetization, type Monetization } from "../services/ads/policy";
+import type {
+  EquipmentCategory,
+  SkinColour,
+  SkinSlots,
+} from "../services/shop/policy";
+import {
+  buySkin,
+  equipSkin,
+  readInventory,
+  type PurchaseResult,
+} from "../services/shop/shopService";
 /**
  * Player store — coins, progress, entitlements.
  *
@@ -6,18 +18,59 @@
  * the store so React re-renders. Reading the balance never touches the network.
  */
 
-import { create } from 'zustand';
-import { coinService } from '../services/coins/coinService';
-import type { CoinReason } from '../services/coins/types';
-import { storage, StorageKeys, getNumber, getBool, getJSON, setJSON } from '../services/storage/mmkv';
+import {
+  claimAward,
+  type AwardClaimResult,
+} from "../services/awards/awardService";
+import {
+  readAwardsProgress,
+  captureDailyStreak,
+  recordPerfectSolve,
+} from "../services/awards/storage";
+import type { Level } from "../game/models/Level";
+import type { GameState } from "../game/models/GameState";
+import type { AwardsProgress } from "../services/awards/policy";
+import { create } from "zustand";
+import {
+  coinService,
+  claimDailyReward,
+  type DailyClaimResult,
+} from "../services/coins/coinService";
+import {
+  parseDailyRecord,
+  type DailyRecord,
+} from "../services/rewards/dailyPolicy";
+import type { CoinReason } from "../services/coins/types";
+import { queueSync } from "../services/sync/syncQueue";
+import {
+  storage,
+  StorageKeys,
+  getNumber,
+  getBool,
+  getJSON,
+  setJSON,
+} from "../services/storage/mmkv";
 
 type PlayerState = {
   coins: number;
+  monetization: Monetization;
+  awards: AwardsProgress;
+  claimAward: (id: string) => AwardClaimResult;
+  recordAwardResult: (level: Level, state: GameState, skipped: boolean) => void;
   currentLevel: number;
   completedLevels: number[];
   premium: boolean;
   unlockedSkins: string[];
   selectedSkin: string;
+  equippedSkins: SkinSlots;
+  buySkin: (id: string) => PurchaseResult;
+  equipSkin: (
+    id: string,
+    category?: EquipmentCategory,
+    colour?: SkinColour
+  ) => boolean;
+  dailyReward: DailyRecord | null;
+  claimDaily: (now?: number) => DailyClaimResult;
 
   earn: (amount: number, reason: CoinReason) => void;
   /** False when unaffordable — callers must check before granting the item. */
@@ -36,11 +89,56 @@ type PlayerState = {
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   coins: coinService.getBalance(),
+  monetization: monetization(getJSON(StorageKeys.monetization, null)),
+  awards: readAwardsProgress(),
+  claimAward: (id) => {
+    const result = claimAward(id);
+    set({ coins: coinService.getBalance(), awards: readAwardsProgress() });
+    return result;
+  },
+  recordAwardResult: (level, state, skipped) => {
+    set({ awards: recordPerfectSolve(level, state, skipped) });
+  },
+  dailyReward: parseDailyRecord(getJSON(StorageKeys.dailyReward, null)),
+  claimDaily: (now) => {
+    captureDailyStreak();
+    const result = claimDailyReward(now);
+    captureDailyStreak();
+    set({
+      unlockedSkins: readInventory().owned,
+      selectedSkin: readInventory().selected,
+      equippedSkins: readInventory().slots ?? {},
+      awards: readAwardsProgress(),
+      coins: coinService.getBalance(),
+      dailyReward: parseDailyRecord(getJSON(StorageKeys.dailyReward, null)),
+    });
+    return result;
+  },
   currentLevel: getNumber(StorageKeys.currentLevel, 1),
   completedLevels: getJSON<number[]>(StorageKeys.completedLevels, []),
   premium: getBool(StorageKeys.premium, false),
-  unlockedSkins: getJSON<string[]>(StorageKeys.unlockedSkins, ['default']),
-  selectedSkin: storage.getString(StorageKeys.selectedSkin) ?? 'default',
+  unlockedSkins: readInventory().owned,
+  selectedSkin: readInventory().selected,
+  equippedSkins: readInventory().slots ?? {},
+  buySkin: (id) => {
+    const result = buySkin(id);
+    const saved = readInventory();
+    set({
+      coins: coinService.getBalance(),
+      unlockedSkins: saved.owned,
+      selectedSkin: saved.selected,
+      equippedSkins: saved.slots ?? {},
+    });
+    return result;
+  },
+  equipSkin: (id, category, colour) => {
+    const result = equipSkin(id, category, colour);
+    set({
+      selectedSkin: readInventory().selected,
+      equippedSkins: readInventory().slots ?? {},
+    });
+    return result;
+  },
 
   earn: (amount, reason) => {
     set({ coins: coinService.earn(amount, reason) });
@@ -54,7 +152,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     return true;
   },
 
-  completeLevel: levelId => {
+  completeLevel: (levelId) => {
     const completed = get().completedLevels;
     if (completed.includes(levelId)) {
       return;
@@ -64,14 +162,19 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const nextLevel = Math.max(get().currentLevel, levelId + 1);
     storage.set(StorageKeys.currentLevel, nextLevel);
     set({ completedLevels: next, currentLevel: nextLevel });
+    // Progress is cloud-synced like coins. Fire-and-forget: the queue batches
+    // this with the level's coin reward into one write.
+    queueSync("progress");
   },
 
-  setPremium: value => {
+  setPremium: (value) => {
     storage.set(StorageKeys.premium, value);
     set({ premium: value });
   },
 
-  devToggleUnlockAll: allIds => {
+  devToggleUnlockAll: (allIds) => {
+    // Deliberately NOT synced: this is a test shortcut, and progress merges
+    // by union, so pushing it would make "unlock all" permanent in the cloud.
     const alreadyAll = get().completedLevels.length >= allIds.length;
     const next = alreadyAll ? [] : allIds;
     setJSON(StorageKeys.completedLevels, next);
@@ -83,6 +186,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   hydrateFromStorage: () => {
     set({
       coins: coinService.getBalance(),
+      monetization: monetization(getJSON(StorageKeys.monetization, null)),
+      unlockedSkins: readInventory().owned,
+      selectedSkin: readInventory().selected,
+      equippedSkins: readInventory().slots ?? {},
+      awards: readAwardsProgress(),
+      dailyReward: parseDailyRecord(getJSON(StorageKeys.dailyReward, null)),
       currentLevel: getNumber(StorageKeys.currentLevel, 1),
       completedLevels: getJSON<number[]>(StorageKeys.completedLevels, []),
       premium: getBool(StorageKeys.premium, false),

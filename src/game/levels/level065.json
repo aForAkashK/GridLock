@@ -1,0 +1,140 @@
+{
+  "id": 65,
+  "gridSize": 7,
+  "difficulty": "hard",
+  "vehicles": [
+    {
+      "id": "car-1",
+      "type": "car",
+      "x": 0,
+      "y": 4,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "red"
+    },
+    {
+      "id": "bus-2",
+      "type": "bus",
+      "x": 4,
+      "y": 2,
+      "width": 3,
+      "height": 1,
+      "direction": "right",
+      "color": "blue"
+    },
+    {
+      "id": "truck-3",
+      "type": "truck",
+      "x": 3,
+      "y": 4,
+      "width": 3,
+      "height": 1,
+      "direction": "right",
+      "color": "yellow"
+    },
+    {
+      "id": "car-4",
+      "type": "car",
+      "x": 2,
+      "y": 5,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "green"
+    },
+    {
+      "id": "car-5",
+      "type": "car",
+      "x": 1,
+      "y": 5,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "purple"
+    },
+    {
+      "id": "ambulance-6",
+      "type": "ambulance",
+      "x": 2,
+      "y": 3,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
+    },
+    {
+      "id": "car-7",
+      "type": "car",
+      "x": 5,
+      "y": 0,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "orange"
+    },
+    {
+      "id": "police-8",
+      "type": "police",
+      "x": 0,
+      "y": 0,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "truck-9",
+      "type": "truck",
+      "x": 3,
+      "y": 5,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "red"
+    },
+    {
+      "id": "taxi-10",
+      "type": "taxi",
+      "x": 2,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "car-11",
+      "type": "car",
+      "x": 0,
+      "y": 1,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "blue"
+    }
+  ],
+  "parMoves": 12,
+  "generation": {
+    "version": 1,
+    "seed": 6500129,
+    "settings": {
+      "vehicles": 11,
+      "minPar": 12,
+      "maxPar": 15,
+      "minBlocked": 3,
+      "minExtraMoves": 1,
+      "minExitWaves": 3,
+      "minScore": 12,
+      "maxHintMs": 5
+    },
+    "metrics": {
+      "initialBlocked": 5,
+      "immediateExits": 5,
+      "extraMoves": 1,
+      "exitWaves": 3,
+      "forcedMoves": 2,
+      "score": 14
+    }
+  }
+}

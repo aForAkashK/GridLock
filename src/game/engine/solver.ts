@@ -1,10 +1,10 @@
 /**
- * Breadth-first solver. Used at authoring time to validate levels and compute
+ * Shortest-path A* solver. Used at authoring time to validate levels and compute
  * par, and at runtime by the hint system.
  *
- * BFS rather than a heuristic search because we need the SHORTEST solution,
- * not just any solution: par drives the star rating and the "perfect solve"
- * badge, so an approximate answer would quietly mis-rate every level.
+ * Every remaining vehicle requires at least one tap to escape. Using that
+ * lower bound prioritises promising states without sacrificing shortest par.
+ * Equal estimates favour fewer remaining vehicles, then insertion order.
  *
  * Runtime budget: a hint must resolve in under 50ms on a mid-range Android
  * device. If a level's search space exceeds that, the level is too complex and
@@ -13,7 +13,7 @@
 
 import type { GameState } from '../models/GameState';
 import { isWon } from '../models/GameState';
-import { applyMove, legalMoves } from './movement';
+import { successors } from './movement';
 
 export type Solution = {
   /** Vehicle ids in the order they must be moved. */
@@ -33,7 +33,7 @@ export const HINT_NODE_BUDGET = 20_000;
 export const VALIDATION_NODE_BUDGET = 200_000;
 
 /**
- * Stable string key for a board position, used to dedupe the BFS frontier.
+ * Stable string key for a board position, used to dedupe the search frontier.
  * Sorted by id so it is independent of the order vehicles happen to sit in
  * the array — `applyMove` preserves order today, but relying on that would be
  * a silent correctness bug the day it stops being true.
@@ -43,7 +43,7 @@ export const VALIDATION_NODE_BUDGET = 200_000;
  */
 export function serializeState(state: GameState): string {
   return state.vehicles
-    .map(v => `${v.id}@${v.x},${v.y}`)
+    .map((v) => `${v.id}@${v.x},${v.y}`)
     .sort()
     .join('|');
 }
@@ -73,8 +73,70 @@ export type SearchResult = {
   nodesExplored: number;
 };
 
+type Entry = {
+  state: GameState;
+  key: string;
+  cost: number;
+  estimate: number;
+  order: number;
+};
+
+function before(a: Entry, b: Entry): boolean {
+  return (
+    a.estimate < b.estimate ||
+    (a.estimate === b.estimate &&
+      (a.state.vehicles.length < b.state.vehicles.length ||
+        (a.state.vehicles.length === b.state.vehicles.length &&
+          a.order < b.order)))
+  );
+}
+
+/** Binary min-heap: no sorting the whole frontier on each expansion. */
+class Frontier {
+  private entries: Entry[] = [];
+
+  push(entry: Entry): void {
+    let index = this.entries.length;
+    this.entries.push(entry);
+    while (index > 0) {
+      const parent = Math.floor((index - 1) / 2);
+      if (!before(entry, this.entries[parent])) {
+        break;
+      }
+      this.entries[index] = this.entries[parent];
+      index = parent;
+    }
+    this.entries[index] = entry;
+  }
+
+  pop(): Entry | undefined {
+    const first = this.entries[0];
+    const last = this.entries.pop();
+    if (this.entries.length === 0 || !last) {
+      return first;
+    }
+    let index = 0;
+    while (index * 2 + 1 < this.entries.length) {
+      let child = index * 2 + 1;
+      if (
+        child + 1 < this.entries.length &&
+        before(this.entries[child + 1], this.entries[child])
+      ) {
+        child++;
+      }
+      if (!before(this.entries[child], last)) {
+        break;
+      }
+      this.entries[index] = this.entries[child];
+      index = child;
+    }
+    this.entries[index] = last;
+    return first;
+  }
+}
+
 /**
- * The BFS itself. Returns the node count even on failure, which `solve` throws
+ * The bounded search. Returns the node count even on failure, which `solve` throws
  * away but the validator needs — an unsolvable position still costs real time
  * to prove unsolvable, and that cost lands on the player waiting for a hint.
  */
@@ -90,42 +152,54 @@ export function search(
   const parents = new Map<string, Trail>([
     [startKey, { prevKey: null, move: null }],
   ]);
-
-  // A plain array with a moving head index. Array.shift() is O(n) and turns
-  // the frontier into the bottleneck on larger boards.
-  const frontier: Array<{ state: GameState; key: string }> = [
-    { state: start, key: startKey },
-  ];
-  let head = 0;
+  const costs = new Map<string, number>([[startKey, 0]]);
+  const frontier = new Frontier();
+  let order = 0;
+  frontier.push({
+    state: start,
+    key: startKey,
+    cost: 0,
+    estimate: start.vehicles.length,
+    order: order++,
+  });
   let explored = 0;
 
-  while (head < frontier.length && explored < maxNodes) {
-    const { state, key } = frontier[head++];
+  while (explored < maxNodes) {
+    const entry = frontier.pop();
+    if (!entry) {
+      break;
+    }
+    const { state, key, cost } = entry;
+    // A cheaper route can supersede an entry already in the heap.
+    if (costs.get(key) !== cost) {
+      continue;
+    }
     explored++;
+    if (isWon(state)) {
+      return {
+        solution: { moves: reconstruct(parents, key), nodesExplored: explored },
+        nodesExplored: explored,
+      };
+    }
 
-    for (const id of legalMoves(state)) {
-      const { state: next, move } = applyMove(state, id);
+    for (const { state: next, move } of successors(state)) {
       if (!move) {
         continue;
       }
-
       const nextKey = serializeState(next);
-      if (parents.has(nextKey)) {
+      const nextCost = cost + 1;
+      if (nextCost >= (costs.get(nextKey) ?? Infinity)) {
         continue;
       }
-      parents.set(nextKey, { prevKey: key, move: id });
-
-      if (isWon(next)) {
-        return {
-          solution: {
-            moves: reconstruct(parents, nextKey),
-            nodesExplored: explored,
-          },
-          nodesExplored: explored,
-        };
-      }
-
-      frontier.push({ state: next, key: nextKey });
+      costs.set(nextKey, nextCost);
+      parents.set(nextKey, { prevKey: key, move: move.vehicleId });
+      frontier.push({
+        state: next,
+        key: nextKey,
+        cost: nextCost,
+        estimate: nextCost + next.vehicles.length,
+        order: order++,
+      });
     }
   }
 

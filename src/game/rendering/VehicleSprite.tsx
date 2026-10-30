@@ -1,11 +1,6 @@
 /**
- * A vehicle, drawn from primitives and animated on the UI thread.
- *
- * These are PLACEHOLDER shapes standing in for the final art (Phase 6,
- * ASSET_GUIDELINES.md). They deliberately follow the real art direction —
- * rounded, toy-like, lit from the top-left, grounded by a soft shadow — so the
- * board can be judged for feel now, and so swapping in real sprites later is a
- * change to this file alone.
+ * A WebP vehicle, drawn in Skia and animated on the UI thread.
+ * Static shadow textures are shared by footprint; no per-frame blur passes.
  *
  * ANIMATION MODEL (ARCHITECTURE.md): the vehicle is always DRAWN at its
  * logical position. Motion is an offset that starts at "where it used to be"
@@ -14,7 +9,7 @@
  * interpolates the visual catch-up on the UI thread.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef } from "react";
 import {
   BlurMask,
   Group,
@@ -22,32 +17,29 @@ import {
   RoundedRect,
   Path,
   type SkImage,
-} from '@shopify/react-native-skia';
+} from "@shopify/react-native-skia";
 import {
   cancelAnimation,
+  ReduceMotion,
   useDerivedValue,
   useSharedValue,
   withRepeat,
   withSequence,
   withTiming,
-} from 'react-native-reanimated';
-import { DIRECTION_VECTORS, type Vehicle } from '../models/Vehicle';
-import { Colors, Timing } from '../../theme/tokens';
+} from "react-native-reanimated";
+import { DIRECTION_VECTORS, type Vehicle } from "../models/Vehicle";
+import { Colors, Timing } from "../../theme/tokens";
 import {
   EXIT_EASING,
   MOVE_EASING,
   SHAKE_EASING,
   SHAKE_FRACTION,
   moveDuration,
-} from './animation';
-import {
-  arrowRotation,
-  arrowSize,
-  arrowStroke,
-  makeArrowPath,
-} from './arrow';
-import { centerOf, vehicleRect, type BoardLayout } from './geometry';
-import { spriteRotation } from './sprites';
+} from "./animation";
+import { arrowRotation, arrowSize, arrowStroke, makeArrowPath } from "./arrow";
+import { centerOf, vehicleRect, type BoardLayout } from "./geometry";
+import { spriteRotation } from "./sprites";
+import { vehicleShadow } from "./shadows";
 
 type Props = {
   vehicle: Vehicle;
@@ -60,15 +52,17 @@ type Props = {
   hinted?: boolean;
   /** Decoded sprite, loaded once per board by `useVehicleImages`. */
   sprite: SkImage;
+  reducedMotion?: boolean;
 };
 
-export function VehicleSprite({
+function VehicleSpriteView({
   vehicle,
   layout,
   exiting = false,
   blockedSignal = 0,
   hinted = false,
   sprite,
+  reducedMotion = false,
 }: Props) {
   const r = vehicleRect(layout, vehicle);
   const c = centerOf(r);
@@ -95,13 +89,21 @@ export function VehicleSprite({
 
     const cells =
       Math.max(Math.abs(deltaX), Math.abs(deltaY)) / layout.cellSize;
-    const duration = moveDuration(cells);
+    const duration = reducedMotion ? Timing.moveMinMs : moveDuration(cells);
 
     offsetX.value = deltaX;
     offsetY.value = deltaY;
-    offsetX.value = withTiming(0, { duration, easing: MOVE_EASING });
-    offsetY.value = withTiming(0, { duration, easing: MOVE_EASING });
-  }, [r.x, r.y, exiting, layout.cellSize, offsetX, offsetY]);
+    offsetX.value = withTiming(0, {
+      duration,
+      easing: MOVE_EASING,
+      reduceMotion: ReduceMotion.Never,
+    });
+    offsetY.value = withTiming(0, {
+      duration,
+      easing: MOVE_EASING,
+      reduceMotion: ReduceMotion.Never,
+    });
+  }, [r.x, r.y, exiting, layout.cellSize, offsetX, offsetY, reducedMotion]);
 
   // Exit: accelerate off the board and fade. Never decelerate into the edge.
   useEffect(() => {
@@ -109,11 +111,28 @@ export function VehicleSprite({
       return;
     }
     const distance = layout.size + layout.cellSize;
-    const config = { duration: Timing.exitMs, easing: EXIT_EASING };
+    const config = {
+      duration: reducedMotion ? Timing.moveMinMs : Timing.exitMs,
+      easing: EXIT_EASING,
+      reduceMotion: ReduceMotion.Never,
+    };
     offsetX.value = withTiming(dx * distance, config);
     offsetY.value = withTiming(dy * distance, config);
-    opacity.value = withTiming(0, { duration: Timing.exitMs });
-  }, [exiting, dx, dy, layout.size, layout.cellSize, offsetX, offsetY, opacity]);
+    opacity.value = withTiming(0, {
+      duration: config.duration,
+      reduceMotion: ReduceMotion.Never,
+    });
+  }, [
+    exiting,
+    dx,
+    dy,
+    layout.size,
+    layout.cellSize,
+    offsetX,
+    offsetY,
+    opacity,
+    reducedMotion,
+  ]);
 
   // Blocked: a short nudge along the direction it wanted to go, then back.
   // It reads as the vehicle trying to move and failing — information, not an
@@ -128,7 +147,7 @@ export function VehicleSprite({
       withTiming(amplitude, { duration: step, easing: SHAKE_EASING }),
       withTiming(-amplitude * 0.55, { duration: step, easing: SHAKE_EASING }),
       withTiming(amplitude * 0.25, { duration: step, easing: SHAKE_EASING }),
-      withTiming(0, { duration: step, easing: SHAKE_EASING }),
+      withTiming(0, { duration: step, easing: SHAKE_EASING })
     );
     if (dx !== 0) {
       offsetX.value = nudge;
@@ -147,13 +166,17 @@ export function VehicleSprite({
       glow.value = withTiming(0, { duration: 150 });
       return;
     }
+    if (reducedMotion) {
+      glow.value = 0.5;
+      return;
+    }
     glow.value = withRepeat(
       withTiming(1, { duration: 650, easing: SHAKE_EASING }),
       -1,
-      true,
+      true
     );
     return () => cancelAnimation(glow);
-  }, [hinted, glow]);
+  }, [hinted, glow, reducedMotion]);
 
   const glowOpacity = useDerivedValue(() => 0.25 + glow.value * 0.65);
 
@@ -165,10 +188,16 @@ export function VehicleSprite({
   const shortSide = Math.min(r.width, r.height);
   const longSide = Math.max(r.width, r.height);
 
-
   const aSize = arrowSize(layout.cellSize);
   const aStroke = arrowStroke(layout.cellSize);
-  const arrowPath = makeArrowPath(c.x, c.y, aSize);
+  const arrowPath = useMemo(
+    () => makeArrowPath(c.x, c.y, aSize),
+    [c.x, c.y, aSize]
+  );
+  const shadow = useMemo(
+    () => vehicleShadow(vehicle.width, vehicle.height),
+    [vehicle.width, vehicle.height]
+  );
   const shadowOffset = Math.max(2, layout.cellSize * 0.05);
 
   return (
@@ -189,25 +218,30 @@ export function VehicleSprite({
         />
       ) : null}
 
-      {/* Ambient shadow. Does most of the work of lifting the vehicle off the
-          board — see DESIGN.md. Light comes from the top-left, so it falls
-          down and right.
-
-          It is BLURRED and inset from the footprint. A hard-edged rect at full
-          footprint size reads as a tile painted under the car rather than a
-          shadow cast by it, which is exactly how it looked before the blur. */}
-      <Group>
-        <RoundedRect
-          x={r.x + r.width * 0.09 + shadowOffset * 0.6}
-          y={r.y + r.height * 0.06 + shadowOffset}
-          width={r.width * 0.82}
-          height={r.height * 0.88}
-          r={radius}
-          color="#000000"
-          opacity={0.32}
+      {/* Reuse a preblurred texture; unsupported future footprints retain the fallback. */}
+      {shadow ? (
+        <SkiaImage
+          image={shadow.image}
+          x={r.x - r.width * shadow.padX + shadowOffset * 0.6}
+          y={r.y - r.height * shadow.padY + shadowOffset}
+          width={r.width * (1 + 2 * shadow.padX)}
+          height={r.height * (1 + 2 * shadow.padY)}
+          fit="fill"
         />
-        <BlurMask blur={Math.max(3, layout.cellSize * 0.07)} style="normal" />
-      </Group>
+      ) : (
+        <Group>
+          <RoundedRect
+            x={r.x + r.width * 0.09 + shadowOffset * 0.6}
+            y={r.y + r.height * 0.06 + shadowOffset}
+            width={r.width * 0.82}
+            height={r.height * 0.88}
+            r={radius}
+            color="#000000"
+            opacity={0.32}
+          />
+          <BlurMask blur={Math.max(3, layout.cellSize * 0.07)} style="normal" />
+        </Group>
+      )}
 
       {/* The sprite is authored facing down, so it is drawn into an upright
           box the size of the vehicle's SHORT x LONG footprint and then rotated
@@ -218,7 +252,8 @@ export function VehicleSprite({
           containing it keeps the proportions and centres it in the cell. */}
       <Group
         origin={c}
-        transform={[{ rotate: spriteRotation(vehicle.direction) }]}>
+        transform={[{ rotate: spriteRotation(vehicle.direction) }]}
+      >
         <SkiaImage
           image={sprite}
           x={c.x - shortSide / 2}
@@ -231,15 +266,18 @@ export function VehicleSprite({
 
       {/* Arrow, rotated into the vehicle's direction. Drawn twice: a dark
           copy underneath keeps it legible on light body colours. */}
-      <Group origin={c} transform={[{ rotate: arrowRotation(vehicle.direction) }]}>
+      <Group
+        origin={c}
+        transform={[{ rotate: arrowRotation(vehicle.direction) }]}
+      >
         <Path
           path={arrowPath}
           style="stroke"
-          strokeWidth={aStroke + 2}
+          strokeWidth={aStroke + 1.4}
           strokeCap="round"
           strokeJoin="round"
-          color="#000000"
-          opacity={0.22}
+          color="#173047"
+          opacity={0.8}
         />
         <Path
           path={arrowPath}
@@ -247,9 +285,13 @@ export function VehicleSprite({
           strokeWidth={aStroke}
           strokeCap="round"
           strokeJoin="round"
-          color="#FFFFFF"
+          color="#F5FAFF"
         />
       </Group>
     </Group>
   );
 }
+
+// Engine transitions preserve untouched vehicle references. Layout and decoded
+// images are stable too, so only the moved/hinted/blocked sprite needs JS work.
+export const VehicleSprite = memo(VehicleSpriteView);

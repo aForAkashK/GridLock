@@ -22,6 +22,29 @@ export type Level = {
   parMoves?: number;
   /** Reserved for v0.3+ — cones, barriers, buildings. Empty for MVP. */
   obstacles?: Obstacle[];
+  /** Authoring provenance. Gameplay never depends on these fields. */
+  generation?: {
+    version: 1;
+    seed: number;
+    settings: {
+      vehicles: number;
+      minPar: number;
+      maxPar: number;
+      minBlocked: number;
+      minExtraMoves: number;
+      minExitWaves: number;
+      minScore: number;
+      maxHintMs: number;
+    };
+    metrics: {
+      initialBlocked: number;
+      immediateExits: number;
+      extraMoves: number;
+      exitWaves: number;
+      forcedMoves: number;
+      score: number;
+    };
+  };
 };
 
 export type Obstacle = {

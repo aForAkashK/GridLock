@@ -81,3 +81,14 @@ google-services.json
 GoogleService-Info.plist
 android/app/google-services.json
 ios/GoogleService-Info.plist
+
+# Firebase Hosting local cache and diagnostics
+.firebase/
+firebase-debug.log*
+
+# Production signing material stays local; back it up securely.
+android/keystores/
+android/signing.properties
+.local-artifacts/
+# Private support recordings and local release artifacts
+.local-release/

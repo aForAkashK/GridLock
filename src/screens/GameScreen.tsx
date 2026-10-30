@@ -1,3 +1,6 @@
+import { breadcrumb } from "../services/diagnostics/client";
+import { ads } from "../services/ads/adService";
+import { BackButton } from "../components/navigation/BackButton";
 /**
  * The gameplay screen.
  *
@@ -6,7 +9,7 @@
  * only the board is Skia — which keeps text selectable, accessible and cheap.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
   Image,
   Pressable,
@@ -14,99 +17,115 @@ import {
   Text,
   useWindowDimensions,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { GameBoard } from '../game/rendering/GameBoard';
-import { LevelCompleteModal } from '../components/LevelCompleteModal';
-import { CoinInfo } from '../components/CoinInfo';
-import { CoinCounter } from '../components/CoinCounter';
-import { vehicleAt } from '../game/engine/collision';
-import { getLevel, nextLevelId } from '../game/levels';
-import { useGameStore } from '../state/gameStore';
-import { usePlayerStore } from '../state/playerStore';
-import { COIN_COSTS, COIN_REWARDS } from '../services/coins/types';
-import { flush as flushSync } from '../services/sync/syncQueue';
-import type { RootStackParamList } from '../navigation/types';
-import { Colors, Home, Radius, Spacing } from '../theme/tokens';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { GameBoard } from "../game/rendering/GameBoard";
+import { LevelCompleteModal } from "../components/LevelCompleteModal";
+import { CoinInfo } from "../components/CoinInfo";
+import { CoinCounter } from "../components/CoinCounter";
+import { vehicleAt } from "../game/engine/collision";
+import {
+  useLevelCatalogStore,
+  followingLevelId,
+} from "../state/levelCatalogStore";
+import { canPlayLevel } from "../game/levels/progression";
+import { useGameStore } from "../state/gameStore";
+import { usePlayerStore } from "../state/playerStore";
+import { COIN_COSTS, COIN_REWARDS } from "../services/coins/types";
+import { flush as flushSync } from "../services/sync/syncQueue";
+import type { RootStackParamList } from "../navigation/types";
+import { Colors, Spacing } from "../theme/tokens";
+import {
+  canUseEmulatorQA,
+  recordQABoard,
+  recordQAMetric,
+} from "../services/debug/emulatorQA";
+import { computeHint } from "../game/engine/hint";
+import { play } from "../services/audio/audioService";
 
-const BG = require('../../assets/ui/bg/gameplay_bg.webp');
+import { gameplayLayout, ACTIONS_HEIGHT } from "../game/rendering/screenLayout";
+
+const BG = require("../../assets/ui/bg/gameplay_bg.webp");
 
 /**
  * Finished button art. The coin cost is PAINTED INTO each one, so nothing is
  * drawn on top and `COIN_COSTS` must stay in step with the pictures:
- * hint 30, undo 20, reset 10, skip 100. Changing a price means new art.
+ * hint 30, undo 20, restart FREE, skip 100. Changing a price means new art.
  */
 const ACTION_ART = {
-  hint: require('../../assets/ui/buttons/hint.webp'),
-  undo: require('../../assets/ui/buttons/undo.webp'),
-  reset: require('../../assets/ui/buttons/reset.webp'),
-  skip: require('../../assets/ui/buttons/skip.webp'),
+  hint: require("../../assets/ui/buttons/hint.webp"),
+  undo: require("../../assets/ui/buttons/undo.webp"),
+  reset: require("../../assets/ui/buttons/reset_free.webp"),
+  skip: require("../../assets/ui/buttons/skip.webp"),
 } as const;
 
-/**
- * Anchors measured from the artwork (853 x 1843), as FRACTIONS so they survive
- * `cover`'s crop on any aspect ratio.
- *
- * `FIELD` is the painted playing surface: x 56..796, y 541..1281 — exactly
- * 740 x 740, with its grid lines at perfect sixths. The board canvas is laid
- * straight onto it, so the engine's cells and the painted cells coincide.
- *
- * `SIGN` is the deliberately blank highway sign the level text sits on.
- */
-const BG_W = 853;
-const BG_H = 1843;
-const FIELD = {
-  left: 56 / BG_W,
-  right: 796 / BG_W,
-  top: 541 / BG_H,
-  bottom: 1281 / BG_H,
-};
-const SIGN = {
-  left: 223 / BG_W,
-  right: 629 / BG_W,
-  top: 114 / BG_H,
-  bottom: 283 / BG_H,
-};
-
-const ACTIONS_HEIGHT = 104;
-
-type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
+type Props = NativeStackScreenProps<RootStackParamList, "Game">;
 
 export function GameScreen({ route, navigation }: Props) {
   const levelId = route.params.levelId;
+  const preview = canUseEmulatorQA() && route.params.preview === true;
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  const coins = usePlayerStore(s => s.coins);
-  const spend = usePlayerStore(s => s.spend);
-  const earn = usePlayerStore(s => s.earn);
-  const completeLevel = usePlayerStore(s => s.completeLevel);
-  const completedLevels = usePlayerStore(s => s.completedLevels);
+  const coins = usePlayerStore((s) => s.coins);
+  const spend = usePlayerStore((s) => s.spend);
+  const earn = usePlayerStore((s) => s.earn);
+  const recordAwardResult = usePlayerStore((s) => s.recordAwardResult);
+  const completeLevel = usePlayerStore((s) => s.completeLevel);
+  const completedLevels = usePlayerStore((s) => s.completedLevels);
 
-  const level = useGameStore(s => s.level);
-  const state = useGameStore(s => s.state);
-  const historyLength = useGameStore(s => s.history.length);
-  const blockedAt = useGameStore(s => s.blockedAt);
-  const blockedVehicleId = useGameStore(s => s.blockedVehicleId);
-  const hintVehicleId = useGameStore(s => s.hintVehicleId);
-  const skipped = useGameStore(s => s.skipped);
-  const loadLevel = useGameStore(s => s.loadLevel);
-  const moveVehicle = useGameStore(s => s.moveVehicle);
-  const undo = useGameStore(s => s.undo);
-  const reset = useGameStore(s => s.reset);
-  const revealHint = useGameStore(s => s.revealHint);
-  const skip = useGameStore(s => s.skip);
+  const level = useGameStore((s) => s.level);
+  const state = useGameStore((s) => s.state);
+  const historyLength = useGameStore((s) => s.history.length);
+  const blockedAt = useGameStore((s) => s.blockedAt);
+  const blockedVehicleId = useGameStore((s) => s.blockedVehicleId);
+  const hintVehicleId = useGameStore((s) => s.hintVehicleId);
+  const skipped = useGameStore((s) => s.skipped);
+  const loadLevel = useGameStore((s) => s.loadLevel);
+  const moveVehicle = useGameStore((s) => s.moveVehicle);
+  const undo = useGameStore((s) => s.undo);
+  const reset = useGameStore((s) => s.reset);
+  const revealHint = useGameStore((s) => s.revealHint);
+  const skip = useGameStore((s) => s.skip);
+
+  const allLevels = useLevelCatalogStore((s) => s.levels);
+  const target =
+    preview || canPlayLevel(levelId, allLevels, completedLevels)
+      ? allLevels.find((item) => item.id === levelId)
+      : undefined;
+  const following = followingLevelId(allLevels, levelId);
+  const nextId =
+    following &&
+    (preview || canPlayLevel(following, allLevels, completedLevels))
+      ? following
+      : undefined;
 
   useEffect(() => {
-    const target = getLevel(levelId);
-    if (target) {
-      loadLevel(target);
+    if (!target) {
+      navigation.replace("LevelSelect");
+      return;
     }
+    loadLevel(target);
     setAwarded(0);
-  }, [levelId, loadLevel]);
+  }, [levelId, loadLevel, target, navigation]);
 
   const [awarded, setAwarded] = useState(0);
+  useEffect(() => {
+    if (!preview || state?.levelId !== levelId || state.moveCount !== 0) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      const started = performance.now();
+      const hint = computeHint(state);
+      recordQAMetric("hint", {
+        levelId,
+        ms: performance.now() - started,
+        found: Boolean(hint),
+      });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [preview, levelId, state]);
 
   /**
    * Award exactly once per level, ever.
@@ -120,9 +139,31 @@ export function GameScreen({ route, navigation }: Props) {
    * 2. Replaying an already-cleared level would otherwise pay again, which is
    *    a trivial coin farm — clear level 1, replay, repeat.
    */
-  const won = state?.status === 'won';
+  const won = state?.status === "won";
+  const resultsConsumed = useRef(false);
   useEffect(() => {
-    if (!won || !level) {
+    if (!won) resultsConsumed.current = false;
+  }, [won, levelId]);
+  const leaveResults = (after: () => void) => {
+    if (resultsConsumed.current) return;
+    resultsConsumed.current = true;
+    if (!preview && !skipped) ads.showInterstitial(after);
+    else after();
+  };
+  useEffect(() => {
+    if (
+      !preview &&
+      won &&
+      level &&
+      state &&
+      level.id === levelId &&
+      state.levelId === levelId
+    ) {
+      recordAwardResult(level, state, skipped);
+    }
+  }, [preview, won, skipped, level, state, levelId, recordAwardResult]);
+  useEffect(() => {
+    if (preview || !won || !level) {
       return;
     }
     if (level.id !== levelId) {
@@ -139,12 +180,22 @@ export function GameScreen({ route, navigation }: Props) {
       setAwarded(0);
       return;
     }
-    earn(COIN_REWARDS.level_complete, 'level_complete');
+    earn(COIN_REWARDS.level_complete, "level_complete");
+    play("coin");
     setAwarded(COIN_REWARDS.level_complete);
     // Level complete is a natural checkpoint (DECISIONS.md D-004): push the
     // new balance now rather than waiting for the idle timer or backgrounding.
     flushSync();
-  }, [won, level, levelId, completedLevels, completeLevel, earn, skipped]);
+  }, [
+    won,
+    level,
+    levelId,
+    completedLevels,
+    completeLevel,
+    earn,
+    skipped,
+    preview,
+  ]);
 
   const handleCellTap = useCallback(
     (x: number, y: number) => {
@@ -157,7 +208,7 @@ export function GameScreen({ route, navigation }: Props) {
         moveVehicle(vehicle.id);
       }
     },
-    [moveVehicle],
+    [moveVehicle]
   );
 
   const [shortfall, setShortfall] = useState<number | null>(null);
@@ -165,7 +216,10 @@ export function GameScreen({ route, navigation }: Props) {
 
   // Derived from the reactive balance rather than coinService, so the buttons
   // dim on the same render that the HUD updates.
-  const canAfford = useCallback((cost: number) => coins >= cost, [coins]);
+  const canAfford = useCallback(
+    (cost: number) => preview || coins >= cost,
+    [coins, preview]
+  );
 
   /**
    * Compute the hint BEFORE charging. If the board has become unsolvable there
@@ -173,6 +227,7 @@ export function GameScreen({ route, navigation }: Props) {
    * the single fastest way to teach players never to buy a hint again.
    */
   const handleHint = useCallback(() => {
+    breadcrumb("game.hint");
     if (!canAfford(COIN_COSTS.hint)) {
       setShortfall(COIN_COSTS.hint);
       return;
@@ -182,20 +237,24 @@ export function GameScreen({ route, navigation }: Props) {
       setDeadEnd(true);
       return;
     }
-    spend(COIN_COSTS.hint, 'hint');
-  }, [canAfford, revealHint, spend]);
+    if (!preview) {
+      spend(COIN_COSTS.hint, "hint");
+    }
+  }, [canAfford, revealHint, spend, preview]);
 
   const handleSkip = useCallback(() => {
+    breadcrumb("game.skip");
     if (!canAfford(COIN_COSTS.skip)) {
       setShortfall(COIN_COSTS.skip);
       return;
     }
-    if (spend(COIN_COSTS.skip, 'skip')) {
+    if (preview || spend(COIN_COSTS.skip, "skip")) {
       skip();
     }
-  }, [canAfford, spend, skip]);
+  }, [canAfford, spend, skip, preview]);
 
   const handleUndo = useCallback(() => {
+    breadcrumb("game.undo");
     if (historyLength === 0) {
       return;
     }
@@ -203,53 +262,32 @@ export function GameScreen({ route, navigation }: Props) {
       setShortfall(COIN_COSTS.undo);
       return;
     }
-    if (spend(COIN_COSTS.undo, 'undo')) {
+    if (preview || spend(COIN_COSTS.undo, "undo")) {
       undo();
     }
-  }, [historyLength, canAfford, spend, undo]);
+  }, [historyLength, canAfford, spend, undo, preview]);
 
   const handleReset = useCallback(() => {
+    breadcrumb("game.reset");
     setDeadEnd(false);
-    if (!canAfford(COIN_COSTS.reset)) {
-      setShortfall(COIN_COSTS.reset);
-      return;
-    }
-    if (spend(COIN_COSTS.reset, 'reset')) {
-      reset();
-    }
-  }, [canAfford, spend, reset]);
+    reset();
+  }, [reset]);
 
-  const nextId = level ? nextLevelId(level.id) : undefined;
+  const { background, sign, boardSize, boardLeft, boardTop } = gameplayLayout(
+    width,
+    height,
+    insets,
+    level?.gridSize ?? 6
+  );
 
-  /**
-   * `cover` metrics for the background, so chrome can be pinned to features
-   * painted INTO the art — the level text has to land on the green sign, and
-   * the sign moves with the crop.
-   */
-  const bgScale = Math.max(width / BG_W, height / BG_H);
-  const bgW = BG_W * bgScale;
-  const bgH = BG_H * bgScale;
-  const bgX = (width - bgW) / 2;
-  const bgY = (height - bgH) / 2;
-  // `left`/`top`, not `x`/`y` — React Native silently ignores x/y on a View,
-  // which parks the absolute box at the origin instead of on the sign.
-  const sign = {
-    left: bgX + SIGN.left * bgW,
-    top: bgY + SIGN.top * bgH,
-    width: (SIGN.right - SIGN.left) * bgW,
-    height: (SIGN.bottom - SIGN.top) * bgH,
-  };
-
-  // The board is not sized from available space any more — it IS the painted
-  // field, mapped through the same crop transform as the sign. Art and grid
-  // therefore stay locked together on every screen.
-  const field = {
-    left: bgX + FIELD.left * bgW,
-    top: bgY + FIELD.top * bgH,
-    width: (FIELD.right - FIELD.left) * bgW,
-    height: (FIELD.bottom - FIELD.top) * bgH,
-  };
-  const boardSize = Math.min(field.width, field.height);
+  if (canUseEmulatorQA()) {
+    recordQABoard({
+      left: boardLeft,
+      top: boardTop,
+      size: boardSize,
+      gridSize: level?.gridSize ?? 6,
+    });
+  }
 
   if (!level || !state) {
     return <View style={styles.container} />;
@@ -259,23 +297,15 @@ export function GameScreen({ route, navigation }: Props) {
     <View style={styles.container}>
       <Image
         source={BG}
-        style={[styles.bg, { width, height }]}
+        style={[styles.bg, background]}
         resizeMode="cover"
         accessibilityIgnoresInvertColors
       />
 
-      <Pressable
+      <BackButton
         onPress={() => navigation.goBack()}
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        hitSlop={12}
-        style={({ pressed }) => [
-          styles.back,
-          { top: insets.top + Spacing.sm },
-          pressed && styles.pressed,
-        ]}>
-        <Text style={styles.backArrow}>‹</Text>
-      </Pressable>
+        style={[styles.back, { top: insets.top + Spacing.sm }]}
+      />
 
       <View style={[styles.coins, { top: insets.top + Spacing.sm }]}>
         <CoinCounter compact />
@@ -283,17 +313,28 @@ export function GameScreen({ route, navigation }: Props) {
 
       {/* Pinned to the blank sign painted into the background art. */}
       <View style={[styles.sign, sign]} pointerEvents="none">
-        <Text style={styles.signTitle} numberOfLines={1}>
+        <Text
+          style={styles.signTitle}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          maxFontSizeMultiplier={1.2}
+        >
           Level {level.id}
         </Text>
-        <Text style={styles.signSub} numberOfLines={1}>
-          {state.moveCount} {state.moveCount === 1 ? 'move' : 'moves'}
-          {level.parMoves !== undefined ? ` · par ${level.parMoves}` : ''}
+        <Text
+          style={styles.signSub}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          maxFontSizeMultiplier={1.2}
+        >
+          {state.moveCount} {state.moveCount === 1 ? "move" : "moves"}
+          {level.parMoves !== undefined ? ` · par ${level.parMoves}` : ""}
         </Text>
       </View>
 
-      <View style={[styles.board, { left: field.left, top: field.top }]}>
+      <View style={[styles.board, { left: boardLeft, top: boardTop }]}>
         <GameBoard
+          key={level.id}
           level={level}
           size={boardSize}
           vehicles={state.vehicles}
@@ -312,7 +353,8 @@ export function GameScreen({ route, navigation }: Props) {
       </View>
 
       <View
-        style={[styles.actions, { paddingBottom: insets.bottom + Spacing.md }]}>
+        style={[styles.actions, { paddingBottom: insets.bottom + Spacing.md }]}
+      >
         <Action
           art={ACTION_ART.hint}
           label={`Hint, ${COIN_COSTS.hint} coins`}
@@ -328,7 +370,7 @@ export function GameScreen({ route, navigation }: Props) {
         />
         <Action
           art={ACTION_ART.reset}
-          label={`Reset, ${COIN_COSTS.reset} coins`}
+          label="Restart level, free"
           affordable={canAfford(COIN_COSTS.reset)}
           onPress={handleReset}
         />
@@ -345,6 +387,10 @@ export function GameScreen({ route, navigation }: Props) {
         needed={shortfall ?? undefined}
         balance={coins}
         onDismiss={() => setShortfall(null)}
+        onAds={() => {
+          setShortfall(null);
+          navigation.navigate("AdBenefits");
+        }}
       />
 
       <LevelCompleteModal
@@ -354,13 +400,14 @@ export function GameScreen({ route, navigation }: Props) {
         coinsAwarded={awarded}
         skipped={skipped}
         hasNextLevel={nextId !== undefined}
-        onNext={() => {
-          if (nextId !== undefined) {
-            navigation.replace('Game', { levelId: nextId });
-          }
-        }}
-        onReplay={reset}
-        onHome={() => navigation.navigate('Home')}
+        onNext={() =>
+          leaveResults(() => {
+            if (nextId !== undefined)
+              navigation.replace("Game", { levelId: nextId, preview });
+          })
+        }
+        onReplay={() => leaveResults(reset)}
+        onHome={() => leaveResults(() => navigation.popTo("Home"))}
       />
     </View>
   );
@@ -390,7 +437,14 @@ function Action({
 }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={
+        onPress
+          ? () => {
+              play("tap");
+              onPress();
+            }
+          : undefined
+      }
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -398,7 +452,8 @@ function Action({
       style={({ pressed }) => [
         (disabled || !affordable) && styles.actionDim,
         pressed && styles.actionPressed,
-      ]}>
+      ]}
+    >
       <Image
         source={art}
         style={styles.actionImage}
@@ -411,59 +466,45 @@ function Action({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.screenBackground },
-  bg: { position: 'absolute', top: 0, left: 0 },
+  bg: { position: "absolute", top: 0, left: 0 },
 
   // Chrome floats over the artwork rather than sitting in a header row: the
   // art already provides the signage this screen's information belongs on.
-  back: {
-    position: 'absolute',
-    left: Spacing.md,
-    width: 46,
-    height: 46,
-    borderRadius: Radius.md,
-    backgroundColor: Home.chrome,
-    borderWidth: 2,
-    borderColor: Home.chromeBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  backArrow: { color: '#FFFFFF', fontSize: 28, lineHeight: 30 },
-  pressed: { transform: [{ scale: 0.94 }] },
-  coins: { position: 'absolute', right: Spacing.md, zIndex: 2 },
+  back: { position: "absolute", left: Spacing.md, zIndex: 2 },
+  coins: { position: "absolute", right: Spacing.md, zIndex: 2 },
 
   sign: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 1,
   },
   signTitle: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 26,
-    fontWeight: '900',
-    textShadowColor: 'rgba(0,0,0,0.45)',
+    fontWeight: "900",
+    textShadowColor: "rgba(0,0,0,0.45)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 3,
   },
   signSub: {
-    color: 'rgba(255,255,255,0.92)',
+    color: "rgba(255,255,255,0.92)",
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 2,
   },
 
   // Absolutely positioned onto the painted field. Its placement comes entirely
   // from the artwork, so there is no flex layout to fight with.
-  board: { position: 'absolute', zIndex: 1 },
+  board: { position: "absolute", zIndex: 1 },
 
   actions: {
-    marginTop: 'auto',
+    marginTop: "auto",
     zIndex: 2,
     height: ACTIONS_HEIGHT,
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignItems: "flex-start",
   },
   // Source art is square (1254x1254).
   actionImage: { width: 70, height: 70 },
@@ -471,15 +512,15 @@ const styles = StyleSheet.create({
   actionPressed: { transform: [{ scale: 0.94 }] },
 
   deadEnd: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -Spacing.xl,
     paddingHorizontal: Spacing.md,
   },
   deadEndText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 13,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.6)',
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.6)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },

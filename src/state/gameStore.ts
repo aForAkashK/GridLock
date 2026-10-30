@@ -11,6 +11,7 @@
  */
 
 import { create } from 'zustand';
+import { play } from '../services/audio/audioService';
 import { computeHint, type Hint } from '../game/engine/hint';
 import { applyMove } from '../game/engine/movement';
 import { popHistory, pushHistory } from '../game/engine/undo';
@@ -84,9 +85,11 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       // Blocked. applyMove returns the same state reference, so there is
       // nothing to commit — only feedback to trigger.
       set({ blockedAt: Date.now(), blockedVehicleId: vehicleId });
+      play('blocked');
       return;
     }
 
+    play(result.state.status === 'won' ? 'win' : result.move.exited ? 'exit' : 'move');
     set({
       state: result.state,
       history: pushHistory(history, state),

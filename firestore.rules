@@ -21,24 +21,36 @@ service cloud.firestore {
   // `is number`, not `is int`: JS has one number type, and whether the client
   // SDK encodes 110 as an integer or a double is its choice. `is int` would
   // reject every write the moment it picks double.
+  //
+  // Progress fields are optional (older documents predate them) but, when
+  // present, must be the right shape. The size cap stops a bad or malicious
+  // client from bloating the document toward Firestore's 1 MiB limit.
   function isValidPlayerDoc(data) {
     return data.coins is number
            && data.coins >= 0
            && data.syncVersion is number
-           && data.syncVersion >= 0;
+           && data.syncVersion >= 0
+           && (!('completedLevels' in data)
+               || (data.completedLevels is list
+                   && data.completedLevels.size() <= 2000))
+           && (!('currentLevel' in data)
+               || (data.currentLevel is number && data.currentLevel >= 1));
   }
 
   match /databases/{database}/documents {
 
     match /players/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid
+                  && !exists(/databases/$(database)/documents/deletedPlayers/$(uid));
 
       allow create: if request.auth != null
                     && request.auth.uid == uid
+                    && !existsAfter(/databases/$(database)/documents/deletedPlayers/$(uid))
                     && isValidPlayerDoc(request.resource.data);
 
       allow update: if request.auth != null
                     && request.auth.uid == uid
+                    && !existsAfter(/databases/$(database)/documents/deletedPlayers/$(uid))
                     && isValidPlayerDoc(request.resource.data)
                     // syncVersion is monotonic. Rejecting a stale or replayed
                     // write here means a second device cannot roll the balance
@@ -46,9 +58,18 @@ service cloud.firestore {
                     && request.resource.data.syncVersion
                        >= resource.data.syncVersion;
 
-      // Progress is never deleted from the client. Account deletion, when it
-      // exists, belongs in a Cloud Function that can also clean up elsewhere.
-      allow delete: if false;
+      // Only owner deletion with the durable anti-resurrection marker.
+      allow delete: if request.auth != null && request.auth.uid == uid
+                    && existsAfter(/databases/$(database)/documents/deletedPlayers/$(uid));
+    }
+
+    match /deletedPlayers/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list: if false;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['deletedAt'])
+                    && request.resource.data.deletedAt == request.time;
+      allow update, delete: if false;
     }
 
     // Everything else is closed. New collections must opt in explicitly.

@@ -1,5 +1,39 @@
 {
   "firestore": {
     "rules": "firestore.rules"
+  },
+  "hosting": {
+    "target": "levels",
+    "public": "level-content/public",
+    "ignore": [
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "predeploy": [
+      "npm run verify:level-release -- --channel 1 --remote",
+      "npm run verify:level-release -- --remote"
+    ],
+    "headers": [
+      {
+        "source": "/levels/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=300, s-maxage=300"
+          },
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          }
+        ]
+      }
+    ]
+  },
+  "react-native": {
+    "crashlytics_auto_collection_enabled": false,
+    "crashlytics_debug_enabled": false,
+    "crashlytics_is_error_generation_on_js_crash_enabled": true,
+    "crashlytics_javascript_exception_handler_chaining_enabled": true,
+    "crashlytics_ndk_enabled": true
   }
 }

@@ -9,17 +9,20 @@
  * landing on top of it steals that (GAME_DESIGN.md).
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
+import { breadcrumb, diagnosticContext } from "../services/diagnostics/client";
 import {
   Image,
+  Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
-} from 'react-native';
+} from "react-native";
 
-const PANEL = require('../../assets/ui/bg/level_clear.webp');
+const PANEL = require("../../assets/ui/bg/level_clear.webp");
 const PANEL_ASPECT = 1105 / 1423;
 /**
  * The three button assets were cropped separately, so their aspect ratios
@@ -29,9 +32,18 @@ const PANEL_ASPECT = 1105 / 1423;
  * small height differences that follow are far less noticeable.
  */
 const BUTTON_ART = {
-  next: { src: require('../../assets/ui/buttons/next_level.webp'), aspect: 1991 / 448 },
-  replay: { src: require('../../assets/ui/buttons/replay.webp'), aspect: 2075 / 499 },
-  home: { src: require('../../assets/ui/buttons/home.webp'), aspect: 2114 / 519 },
+  next: {
+    src: require("../../assets/ui/buttons/next_level.webp"),
+    aspect: 1991 / 448,
+  },
+  replay: {
+    src: require("../../assets/ui/buttons/replay.webp"),
+    aspect: 2075 / 499,
+  },
+  home: {
+    src: require("../../assets/ui/buttons/home.webp"),
+    aspect: 2114 / 519,
+  },
 } as const;
 
 /**
@@ -84,19 +96,47 @@ export function LevelCompleteModal({
 }: Props) {
   const { width, height } = useWindowDimensions();
   const [shown, setShown] = useState(false);
+  const pendingAction = useRef<(() => void) | null>(null);
+  const leaving = useRef(false);
+  const frame = useRef<number | null>(null);
+  const finishDismiss = () => {
+    const action = pendingAction.current;
+    pendingAction.current = null;
+    frame.current = null;
+    action?.();
+  };
+  const leave = (action: () => void) => {
+    if (leaving.current) return;
+    breadcrumb("completion.action", {
+      reason:
+        action === onNext ? "next" : action === onReplay ? "replay" : "home",
+    });
+    diagnosticContext({ completionVisible: false });
+    leaving.current = true;
+    pendingAction.current = action;
+    setShown(false);
+    // Dismiss the native window before navigation or an SDK ad presentation.
+    if (Platform.OS !== "ios")
+      frame.current = requestAnimationFrame(finishDismiss);
+  };
+  useEffect(
+    () => () => {
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      pendingAction.current = null;
+    },
+    []
+  );
 
   useEffect(() => {
     if (!visible) {
+      diagnosticContext({ completionVisible: false });
+      leaving.current = false;
       setShown(false);
       return;
     }
     const timer = setTimeout(() => setShown(true), REVEAL_DELAY_MS);
     return () => clearTimeout(timer);
   }, [visible]);
-
-  if (!visible || !shown) {
-    return null;
-  }
 
   // Explicit size — an Image with only inset-0 has no definite box and falls
   // back to intrinsic size treated as dp (see DESIGN.md).
@@ -120,7 +160,7 @@ export function LevelCompleteModal({
   const inverseAspects = buttonArt.reduce((sum, b) => sum + 1 / b.aspect, 0);
   const buttonW = Math.min(
     (band - gap * (buttonArt.length - 1)) / inverseAspects,
-    w * 0.9,
+    w * 0.9
   );
 
   // A skipped level was never solved, so move count, par and the perfect-solve
@@ -128,77 +168,112 @@ export function LevelCompleteModal({
   const perfect = !skipped && parMoves !== undefined && moveCount <= parMoves;
 
   return (
-    <View style={styles.backdrop}>
-      <View style={{ width: w, height: h }}>
-        <Image
-          source={PANEL}
-          style={{ width: w, height: h }}
-          resizeMode="contain"
-          accessibilityIgnoresInvertColors
-        />
+    <Modal
+      visible={visible && shown}
+      transparent
+      animationType={Platform.OS === "ios" ? "fade" : "none"}
+      statusBarTranslucent
+      hardwareAccelerated
+      onShow={() => {
+        diagnosticContext({ completionVisible: true });
+        breadcrumb("completion.presented");
+      }}
+      onRequestClose={() => leave(onHome)}
+      onDismiss={finishDismiss}
+    >
+      <View style={styles.backdrop} accessibilityViewIsModal>
+        <View style={{ width: w, height: h }}>
+          <Image
+            source={PANEL}
+            style={{ width: w, height: h }}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
 
-        {/* Stats, dropped into the panel's blank slot. */}
-        <View
-          style={[
-            styles.slot,
-            {
-              left: SLOT.left * w,
-              width: (SLOT.right - SLOT.left) * w,
-              top: SLOT.top * h,
-              height: (SLOT.bottom - SLOT.top) * h,
-            },
-          ]}
-          pointerEvents="none">
-          {skipped ? (
-            <Text style={[styles.stat, { fontSize: statSize }]}>
-              Level unlocked
-            </Text>
-          ) : (
-            <Text style={[styles.stat, { fontSize: statSize }]}>
-              {moveCount} {moveCount === 1 ? 'move' : 'moves'}
-              {parMoves !== undefined ? ` · par ${parMoves}` : ''}
-            </Text>
-          )}
+          {/* Stats, dropped into the panel's blank slot. */}
+          <View
+            style={[
+              styles.slot,
+              {
+                left: SLOT.left * w,
+                width: (SLOT.right - SLOT.left) * w,
+                top: SLOT.top * h,
+                height: (SLOT.bottom - SLOT.top) * h,
+              },
+            ]}
+            pointerEvents="none"
+          >
+            {skipped ? (
+              <Text
+                maxFontSizeMultiplier={1.15}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.stat, { fontSize: statSize }]}
+              >
+                Level unlocked
+              </Text>
+            ) : (
+              <Text
+                maxFontSizeMultiplier={1.15}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.stat, { fontSize: statSize }]}
+              >
+                {moveCount} {moveCount === 1 ? "move" : "moves"}
+                {parMoves !== undefined ? ` · par ${parMoves}` : ""}
+              </Text>
+            )}
 
-          {perfect ? (
-            <Text style={[styles.perfect, { fontSize: statSize * 1.05 }]}>
-              Perfect solve ⭐
-            </Text>
-          ) : (
-            <Text style={[styles.reward, { fontSize: statSize }]}>
-              {coinsAwarded > 0
-                ? `+${coinsAwarded} 🪙`
-                : skipped
-                ? 'No coins for a skip'
-                : 'Replay — no coins again'}
-            </Text>
-          )}
-        </View>
+            {perfect ? (
+              <Text
+                maxFontSizeMultiplier={1.15}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.perfect, { fontSize: statSize * 1.05 }]}
+              >
+                Perfect solve ⭐
+              </Text>
+            ) : (
+              <Text
+                maxFontSizeMultiplier={1.15}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.reward, { fontSize: statSize }]}
+              >
+                {coinsAwarded > 0
+                  ? `+${coinsAwarded} 🪙`
+                  : skipped
+                  ? "No coins for a skip"
+                  : "Replay — no coins again"}
+              </Text>
+            )}
+          </View>
 
-        <View style={[styles.buttons, { top: BUTTONS_TOP * h, gap }]}>
-          {hasNextLevel ? (
+          <View style={[styles.buttons, { top: BUTTONS_TOP * h, gap }]}>
+            {hasNextLevel ? (
+              <ArtButton
+                art={BUTTON_ART.next}
+                label="Next level"
+                width={buttonW}
+                onPress={() => leave(onNext)}
+              />
+            ) : null}
             <ArtButton
-              art={BUTTON_ART.next}
-              label="Next level"
+              art={BUTTON_ART.replay}
+              label={skipped ? "Try it properly" : "Replay"}
               width={buttonW}
-              onPress={onNext}
+              onPress={() => leave(onReplay)}
             />
-          ) : null}
-          <ArtButton
-            art={BUTTON_ART.replay}
-            label={skipped ? 'Try it properly' : 'Replay'}
-            width={buttonW}
-            onPress={onReplay}
-          />
-          <ArtButton
-            art={BUTTON_ART.home}
-            label="Home"
-            width={buttonW}
-            onPress={onHome}
-          />
+            <ArtButton
+              art={BUTTON_ART.home}
+              label="Home"
+              width={buttonW}
+              onPress={() => leave(onHome)}
+            />
+          </View>
         </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 
@@ -219,7 +294,8 @@ function ArtButton({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [pressed && styles.pressed]}>
+      style={({ pressed }) => [pressed && styles.pressed]}
+    >
       <Image
         source={art.src}
         style={{ width, height: width / art.aspect }}
@@ -232,26 +308,22 @@ function ArtButton({
 
 const styles = StyleSheet.create({
   backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(6, 12, 24, 0.68)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1,
+    backgroundColor: "rgba(6, 12, 24, 0.68)",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 20,
   },
   slot: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
     // Keeps both lines off the slot's rounded edges.
     paddingVertical: 6,
   },
-  stat: { color: '#FFFFFF', fontWeight: '700' },
-  perfect: { color: '#FFD84D', fontWeight: '900', marginTop: 5 },
-  reward: { color: '#FFD84D', fontWeight: '800', marginTop: 5 },
-  buttons: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  stat: { color: "#FFFFFF", fontWeight: "700" },
+  perfect: { color: "#FFD84D", fontWeight: "900", marginTop: 5 },
+  reward: { color: "#FFD84D", fontWeight: "800", marginTop: 5 },
+  buttons: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   pressed: { transform: [{ scale: 0.96 }] },
 });

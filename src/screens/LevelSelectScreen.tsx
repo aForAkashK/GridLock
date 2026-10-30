@@ -1,3 +1,4 @@
+import { BackButton } from "../components/navigation/BackButton";
 /**
  * Level select.
  *
@@ -8,141 +9,135 @@
  * Locked tiles stay visible rather than hidden so progress is legible.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from "react";
 import {
   Image,
   Pressable,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { CoinPill } from '../components/CoinPill';
-import { usePlayerStore } from '../state/playerStore';
-import { CoinInfo } from '../components/CoinInfo';
-import { LEVELS } from '../game/levels';
-import type { RootStackParamList } from '../navigation/types';
-import { Home, Radius, Spacing } from '../theme/tokens';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { CoinPill } from "../components/CoinPill";
+import { levelSelectLayout } from "../game/rendering/screenLayout";
+import { usePlayerStore } from "../state/playerStore";
+import { CoinInfo } from "../components/CoinInfo";
+import { useLevelCatalogStore } from "../state/levelCatalogStore";
+import { visibleLevels } from "../game/levels/progression";
+import type { RootStackParamList } from "../navigation/types";
+import { Home, Radius, Spacing } from "../theme/tokens";
 
-const BG = require('../../assets/ui/bg/levels_bg.webp');
-const TILE_OPEN = require('../../assets/ui/buttons/playable_level.webp');
-const TILE_LOCKED = require('../../assets/ui/buttons/disabled_level.webp');
-
-/**
- * Where the painted sign ends (measured: y 174..312 of 1863). The grid starts
- * below it so chrome never collides with artwork.
- */
-const BG_H = 1863;
-const SIGN_BOTTOM = 312 / BG_H;
+const BG = require("../../assets/ui/bg/levels_bg.webp");
+const TILE_OPEN = require("../../assets/ui/buttons/playable_level.webp");
+const TILE_LOCKED = require("../../assets/ui/buttons/disabled_level.webp");
 
 const COLUMNS = 4;
 
-/** Breathing room between the painted "Levels" sign and the first row. */
-const GRID_TOP_GAP = 52;
-
-type Props = NativeStackScreenProps<RootStackParamList, 'LevelSelect'>;
+type Props = NativeStackScreenProps<RootStackParamList, "LevelSelect">;
 
 export function LevelSelectScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const completed = usePlayerStore(s => s.completedLevels);
-  const coins = usePlayerStore(s => s.coins);
-  const devToggleUnlockAll = usePlayerStore(s => s.devToggleUnlockAll);
+  const allLevels = useLevelCatalogStore((s) => s.levels);
+  const completed = usePlayerStore((s) => s.completedLevels);
+  const levels = useMemo(
+    () => visibleLevels(allLevels, completed),
+    [allLevels, completed]
+  );
+  const coins = usePlayerStore((s) => s.coins);
+  const devToggleUnlockAll = usePlayerStore((s) => s.devToggleUnlockAll);
   const [coinInfo, setCoinInfo] = useState(false);
 
-  // Same cover maths as the other screens, so the grid tracks the painted sign
-  // rather than guessing at a fixed offset.
-  const scale = Math.max(width / 844, height / BG_H);
-  const bgH = BG_H * scale;
-  const bgY = (height - bgH) / 2;
-  const gridTop = bgY + SIGN_BOTTOM * bgH + GRID_TOP_GAP;
+  const { background, gridTop } = levelSelectLayout(width, height, insets.top);
 
   // Tighter margins than the default so the tiles themselves get bigger —
   // the art needs room for a number AND its arrow/padlock without them
   // crowding each other.
   const gap = 6;
   const sidePadding = Spacing.sm;
-  const tileSize =
-    (width - sidePadding * 2 - gap * (COLUMNS - 1)) / COLUMNS;
+  const tileSize = (width - sidePadding * 2 - gap * (COLUMNS - 1)) / COLUMNS;
 
   return (
     <View style={styles.root}>
       <Image
         source={BG}
-        style={[styles.bg, { width, height }]}
+        style={[styles.bg, background]}
         resizeMode="cover"
         accessibilityIgnoresInvertColors
       />
 
-      <Pressable
+      <BackButton
         onPress={() => navigation.goBack()}
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        hitSlop={12}
-        style={({ pressed }) => [
-          styles.back,
-          { top: insets.top + Spacing.sm },
-          pressed && styles.pressed,
-        ]}>
-        <Text style={styles.backArrow}>‹</Text>
-      </Pressable>
+        style={[styles.back, { top: insets.top + Spacing.sm }]}
+      />
 
       <View style={[styles.coins, { top: insets.top + Spacing.sm }]}>
-        <CoinPill onAddCoins={() => setCoinInfo(true)} />
+        <CoinPill scale={0.8} onAddCoins={() => setCoinInfo(true)} />
       </View>
 
       {/* Testing shortcut. __DEV__ is false in release builds, so this is
           stripped entirely and can never reach a player. */}
       {__DEV__ ? (
         <Pressable
-          onPress={() => devToggleUnlockAll(LEVELS.map(l => l.id))}
+          onPress={() => devToggleUnlockAll(allLevels.map((l) => l.id))}
           accessibilityRole="button"
           accessibilityLabel="Developer: toggle unlock all levels"
           style={({ pressed }) => [
             styles.dev,
             { top: insets.top + Spacing.sm + 52 },
             pressed && styles.pressed,
-          ]}>
+          ]}
+        >
           <Text style={styles.devText}>
-            {completed.length >= LEVELS.length ? 'DEV: lock' : 'DEV: unlock all'}
+            {completed.length >= levels.length
+              ? "DEV: lock"
+              : "DEV: unlock all"}
           </Text>
         </Pressable>
       ) : null}
 
-      <ScrollView
+      <FlatList
+        style={[styles.viewport, { marginTop: gridTop }]}
+        data={levels}
+        numColumns={COLUMNS}
+        keyExtractor={(item) => String(item.id)}
+        initialNumToRender={16}
+        maxToRenderPerBatch={12}
+        windowSize={5}
+        columnWrapperStyle={{ gap }}
         contentContainerStyle={[
           styles.grid,
           {
-            paddingTop: gridTop,
             paddingBottom: insets.bottom + Spacing.xl,
             paddingHorizontal: sidePadding,
             gap,
           },
         ]}
-        showsVerticalScrollIndicator={false}>
-        {LEVELS.map((level, index) => {
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item: level, index }) => {
           const isDone = completed.includes(level.id);
-          const previous = LEVELS[index - 1];
+          const previous = levels[index - 1];
           const unlocked = index === 0 || completed.includes(previous.id);
 
           return (
             <Pressable
               key={level.id}
               disabled={!unlocked}
-              onPress={() => navigation.navigate('Game', { levelId: level.id })}
+              onPress={() => navigation.navigate("Game", { levelId: level.id })}
               accessibilityRole="button"
               accessibilityLabel={
                 unlocked
-                  ? `Level ${level.id}${isDone ? ', completed' : ''}`
+                  ? `Level ${level.id}${isDone ? ", completed" : ""}`
                   : `Level ${level.id}, locked`
               }
               style={({ pressed }) => [
                 { width: tileSize, height: tileSize },
                 pressed && styles.tilePressed,
-              ]}>
+              ]}
+            >
               {/* Explicit size, NOT absoluteFill. An Image with only inset-0
                   has no definite box, so `contain` falls back to drawing at
                   intrinsic size treated as dp — a 1254px tile then renders
@@ -160,14 +155,15 @@ export function LevelSelectScreen({ navigation }: Props) {
                   styles.number,
                   { fontSize: tileSize * 0.25 },
                   !unlocked && styles.numberLocked,
-                ]}>
+                ]}
+              >
                 {level.id}
               </Text>
               {isDone ? <Text style={styles.done}>✓</Text> : null}
             </Pressable>
           );
-        })}
-      </ScrollView>
+        }}
+      />
 
       {/* <View style={[styles.hint, { bottom: insets.bottom + Spacing.md }]}>
         <Text style={styles.hintText}>
@@ -185,74 +181,62 @@ export function LevelSelectScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Home.sky },
-  bg: { position: 'absolute', top: 0, left: 0 },
+  bg: { position: "absolute", top: 0, left: 0 },
 
-  back: {
-    position: 'absolute',
-    left: Spacing.md,
-    width: 46,
-    height: 46,
-    borderRadius: Radius.md,
-    backgroundColor: Home.chrome,
-    borderWidth: 2,
-    borderColor: Home.chromeBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 3,
-  },
-  backArrow: { color: '#FFFFFF', fontSize: 28, lineHeight: 30 },
+  back: { position: "absolute", left: Spacing.md, zIndex: 3 },
   pressed: { transform: [{ scale: 0.94 }] },
 
-  coins: { position: 'absolute', right: Spacing.md, zIndex: 3 },
+  coins: { position: "absolute", right: Spacing.md, zIndex: 3 },
   dev: {
-    position: 'absolute',
+    position: "absolute",
     left: Spacing.md,
     zIndex: 4,
-    backgroundColor: 'rgba(230, 60, 60, 0.92)',
+    backgroundColor: "rgba(230, 60, 60, 0.92)",
     borderRadius: Radius.sm,
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
-  devText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
+  devText: { color: "#FFFFFF", fontSize: 10, fontWeight: "900" },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  viewport: { flex: 1 },
+  grid: {},
   tilePressed: { transform: [{ scale: 0.95 }] },
   number: {
-    position: 'absolute',
+    position: "absolute",
     // Clear of the top edge, but still above the artwork's arrow/padlock zone
     // which starts around 45%.
-    top: '13%',
+    top: "13%",
     left: 0,
     right: 0,
-    textAlign: 'center',
-    color: '#FFFFFF',
-    fontWeight: '900',
-    textShadowColor: 'rgba(0,0,0,0.4)',
+    textAlign: "center",
+    color: "#FFFFFF",
+    fontWeight: "900",
+    textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 3,
   },
-  numberLocked: { color: '#A8B4C8' },
+  numberLocked: { color: "#A8B4C8" },
   done: {
-    position: 'absolute',
+    position: "absolute",
     top: 4,
     right: 6,
-    color: '#5BD94A',
+    color: "#5BD94A",
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   hintWrap: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
-    alignItems: 'center',
+    alignItems: "center",
     zIndex: 2,
   },
   hint: {
-    backgroundColor: 'rgba(28, 36, 52, 0.88)',
+    backgroundColor: "rgba(28, 36, 52, 0.88)",
     borderRadius: Radius.pill,
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.lg,
   },
-  hintText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  hintText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
 });

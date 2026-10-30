@@ -138,13 +138,13 @@ how far ahead the player must think — which is why the solver records
 
 ## Assistance
 
-All four are optional, purchasable with coins, and never required.
+Assistance is optional. Restart is free; the other actions use coins.
 
 | Action | Cost | Behaviour |
 |---|---|---|
 | Hint | 30 | Highlights a genuinely useful next move |
 | Undo | 20 | Reverts one move |
-| Reset | 10 | Back to the level's starting state |
+| Reset | 0 | Back to the level's starting state |
 | Skip | 100 | Marks complete, moves on |
 
 **A hint must be a real move, not a random highlight.** It runs the solver from
@@ -171,7 +171,13 @@ hint — assistance is affordable but considered.
 Starting balance is 100: enough for three hints, so a new player can afford to
 be stuck without feeling poor.
 
-Daily reward (50) exists to bring players back, not to fund play.
+Daily is a manual claim, once per device-local calendar date. Consecutive claims pay 20, 30, 40, 50, 60, 80, then 100 coins; Day 7 and every subsequent consecutive day pay 100. Missing a calendar date resets the next claim to Day 1 (20). Opening the app without claiming does not preserve the streak. Rewards become available at local midnight, not 24 hours after the prior claim.
+
+Daily claims work offline, use a durable local intent to repair interrupted writes, and sync their last date/time/streak with the existing player save. Repeated taps cannot award twice. Backward clock/date changes cannot reopen a claim. This client-clock policy is not fraud-proof and cannot provide global exactly-once awards across concurrently offline devices; trusted verification is needed before selling currency.
+
+Planned rewarded ads pay 50 coins per completed ad, capped at 3 per day. No reward for a partial view; actual ad length comes from the provider. This is a policy/configuration only until the SDK and verified reward path are implemented.
+
+Planned cosmetic prices: standard skin 300, special vehicle 900, themed pack 1,800. Default vehicles and their existing colours remain free. Skins preserve footprints, direction arrows and puzzle rules. Ads are not yet available. Red Racer is available for 300 earned coins; other skin prices remain planned. The first 100 level completions pay 1,000 coins total; a full first daily week pays 380. These are initial playtest prices, with no real-money exchange rate established.
 
 Numbers are provisional until v0.2 analytics show real hint usage and where
 players actually get stuck.
@@ -207,3 +213,26 @@ slippery vehicles, temporary roads, switch-gates.
 
 The `Level` type already carries an optional `obstacles` field so adding them
 later is a data change, not an engine rewrite.
+
+## First-release campaign update (2026-10-26)
+
+100 prepared levels ship offline. Show 1–50 initially, then reveal 51–100 after the first group is complete; existing Skip completion counts. Boards: 6×6 through59, 7×7 at60–79, 8×8 at80–100. Later sizes require a reviewed app change. Restart costs **0 coins**, superseding the old paid-reset entry: a player can always retry without currency. Daily rewards are available; Awards are implemented; Shop offers Red Racer, Inventory and local Coin History. Human difficulty calibration across the full campaign remains a launch acceptance task.
+
+## Awards (2026-10-28)
+
+Ten permanent, manually collected achievements. Five completion milestones(1/10/25/50/100 unique completed levels) pay25/50/100/150/300. Three perfect goals(1/5/10 different at-par-or-better wins) pay25/50/100. Daily-claim streak goals(3/7 days) pay50/100. Total one-time payout950 coins. Existing completions,including skips,count for completion milestones. Perfect history was not previously saved,so it starts with this update; replaying an old level can record its first perfect,but never counts twice. Skips and preview-mode wins do not record perfects. Daily goals preserve the best observed claim streak,seeded from the currently saved receipt; older lost streak history cannot be invented.
+
+Awards are available offline and never block play. Home shows a dot when a reward is claimable; each reward is collected once from Awards. Local claims use a durable intent and receipts. Cloud sync unions perfect IDs/claimed award IDs and takes the highest daily streak,without adding coin balances. Existing account recovery still adopts cloud coins. This does not provide global exactly-once guarantees across concurrently offline devices; before selling currency,move reward authorization to a trusted ledger. No backend function,ad SDK or IAP is added for these basic achievements.
+
+
+## Garage (2026-10-28)
+
+Red Racer costs 300 earned coins once. Purchase and Equip are separate actions; Classic remains free. The equipped skin replaces red compact-car art only, preserving all palette cues, hitboxes and rules. Inventory previews owned cosmetics. Coin History shows the latest 200 device-local transactions from this update onward, including rewards, assistance and skin purchases; cloud balance restores are checkpoints, not earnings. See SHOP.md.
+
+
+Equipment correction: Shop lists paid cosmetics and marks purchased items Owned. Inventory maintains an independent look per vehicle type and original level colour. All default colours coexist. A purchased red car cosmetic replaces only red cars; it must never recolour blue/yellow/other cars or red trucks/buses. A default selection resets only that slot. The erroneous category-wide colour overrides are discarded on migration; ownership is preserved. Pack definitions can declare several explicit replacement slots. Special vehicle identities, footprints and rules remain unchanged. Equip is free and creates no coin-history entry.
+
+
+## Ads release economy (2026-10-28; supersedes planned D-018 values)
+
+Coin rewarded ads pay10/15/20/25/35/50 for the first six each local day, then10 each without a claim cap. Only completed coin ads advance that ladder. Five separate completed pass ads give24 rolling hours without forced level ads; no coins for these views and partial progress is retained across days. Seven-day coin pass1000;30-day coin pass3000. Coin purchases extend existing expiry. Optional coin ads remain available during passes. Skip/developer preview have no level ad; normal win results offer a ready interstitial on Next/Replay/Home after every four completed real rounds (including replay wins), with immediate navigation on the other three or when no ad is ready. Device-local pacing survives restart; active-pass results reset it. No mid-puzzle or app-open ads, permanent purchase or real-money skin purchase is included.

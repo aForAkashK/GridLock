@@ -11,45 +11,88 @@
  * of the image width.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { HomeTile } from '../components/home/HomeTile';
-import { PlayButton } from '../components/home/PlayButton';
-import { ProgressBanner } from '../components/home/ProgressBanner';
-import { TopBar } from '../components/home/TopBar';
-import { CoinInfo } from '../components/CoinInfo';
-import { usePlayerStore } from '../state/playerStore';
-import { getLevel, TOTAL_LEVELS } from '../game/levels';
-import type { RootStackParamList } from '../navigation/types';
-import { Home, Spacing } from '../theme/tokens';
+} from "react-native";
+import { useIsFocused } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { SaveProgressPrompt } from "../components/SaveProgressPrompt";
+import { HomeTile } from "../components/home/HomeTile";
+import { PlayButton } from "../components/home/PlayButton";
+import { ProgressBanner } from "../components/home/ProgressBanner";
+import { TopBar } from "../components/home/TopBar";
+import { CoinInfo } from "../components/CoinInfo";
+import { usePlayerStore } from "../state/playerStore";
+import { useLevelCatalogStore } from "../state/levelCatalogStore";
+import { continueLevel, visibleLevels } from "../game/levels/progression";
+import type { RootStackParamList } from "../navigation/types";
+import { useDailyRewardStatus } from "../hooks/useDailyRewardStatus";
+import { AWARDS } from "../services/awards/catalog";
+import { awardStatus } from "../services/awards/policy";
+import { warmMenuAssets } from "../services/assets/warmMenuAssets";
+import { warmVehicleImages } from "../game/rendering/sprites";
+import { Home, Spacing } from "../theme/tokens";
 
-const BG = require('../../assets/ui/bg/home.webp');
+// RN supplies idle timers at runtime but omits their TypeScript globals.
+const idleRuntime = globalThis as typeof globalThis & {
+  requestIdleCallback: (callback: () => void) => number;
+  cancelIdleCallback: (handle: number) => void;
+};
+const BG = require("../../assets/ui/bg/home.webp");
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 export function HomeScreen({ navigation }: Props) {
+  const daily = useDailyRewardStatus();
+  const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const currentLevel = usePlayerStore(s => s.currentLevel);
-  const completed = usePlayerStore(s => s.completedLevels);
-  const coins = usePlayerStore(s => s.coins);
+  const currentLevel = usePlayerStore((s) => s.currentLevel);
+  const completed = usePlayerStore((s) => s.completedLevels);
+  const awards = usePlayerStore((s) => s.awards);
+  const awardsReady = useMemo(
+    () =>
+      AWARDS.some(
+        (award) => awardStatus(award.id, awards, completed)?.claimable
+      ),
+    [awards, completed]
+  );
+  const coins = usePlayerStore((s) => s.coins);
   const [coinInfo, setCoinInfo] = useState(false);
+  const [homeArtReady, setHomeArtReady] = useState(false);
+  const skins = usePlayerStore((s) => s.equippedSkins);
 
-  // Fall back to level 1 once the player runs past the authored levels.
-  const playLevel = getLevel(currentLevel) ? currentLevel : 1;
-  const resuming = completed.length > 0 && getLevel(currentLevel) !== undefined;
+  const allLevels = useLevelCatalogStore((s) => s.levels);
+  const levels = useMemo(
+    () => visibleLevels(allLevels, completed),
+    [allLevels, completed]
+  );
+  const playLevel = continueLevel(allLevels, completed, currentLevel);
+  const resuming = completed.length > 0;
+  const upcoming = allLevels.find((level) => level.id === playLevel);
+  useEffect(() => {
+    if (!homeArtReady || !focused) return;
+    let active = true;
+    // Begin after Home has its artwork, never on the Play/navigation tap path.
+    const task = idleRuntime.requestIdleCallback(() => {
+      warmMenuAssets(() => active);
+      if (upcoming) warmVehicleImages(upcoming.vehicles, skins, () => active);
+    });
+    return () => {
+      active = false;
+      idleRuntime.cancelIdleCallback(task);
+    };
+  }, [homeArtReady, upcoming, skins, focused]);
 
   const play = useCallback(
-    () => navigation.navigate('Game', { levelId: playLevel }),
-    [navigation, playLevel],
+    () => navigation.navigate("Game", { levelId: playLevel }),
+    [navigation, playLevel]
   );
 
   return (
@@ -65,6 +108,8 @@ export function HomeScreen({ navigation }: Props) {
           the art at ~2.7x and shows only its top-left corner. */}
       <Image
         source={BG}
+        onLoad={() => setHomeArtReady(true)}
+        fadeDuration={0}
         style={[styles.bg, { width, height }]}
         resizeMode="cover"
         accessibilityIgnoresInvertColors
@@ -73,12 +118,17 @@ export function HomeScreen({ navigation }: Props) {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + Spacing.sm, paddingBottom: insets.bottom + Spacing.lg },
+          {
+            paddingTop: insets.top + Spacing.sm,
+            paddingBottom: insets.bottom + Spacing.lg,
+          },
         ]}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         <TopBar
-          onSettings={() => navigation.navigate('Settings')}
+          onSettings={() => navigation.navigate("Settings")}
           onAddCoins={() => setCoinInfo(true)}
+          onAdFree={() => navigation.navigate("AdBenefits")}
         />
 
         {/* Pushes the controls down over the road, clear of the vehicles. */}
@@ -89,39 +139,52 @@ export function HomeScreen({ navigation }: Props) {
 
           <View style={styles.tiles}>
             <HomeTile
-              icon="🗺️"
+              kind="levels"
               label="LEVELS"
-              color={Home.tileBlue}
-              onPress={() => navigation.navigate('LevelSelect')}
+              onPress={() => navigation.navigate("LevelSelect")}
             />
             <HomeTile
-              icon="📅"
+              kind="daily"
               label="DAILY"
-              color={Home.tilePurple}
-              locked
+              badge={daily.available}
+              onPress={() => navigation.navigate("DailyRewards")}
             />
             <HomeTile
-              icon="🏆"
+              kind="awards"
               label="AWARDS"
-              color={Home.tileAmber}
-              locked
+              badge={awardsReady}
+              accessibilityHint={
+                awardsReady
+                  ? "Coin rewards are ready to collect"
+                  : "View achievements and coin rewards"
+              }
+              onPress={() => navigation.navigate("Awards")}
             />
             <HomeTile
-              icon="🛒"
+              kind="shop"
               label="SHOP"
-              color={Home.tilePink}
-              locked
+              onPress={() => navigation.navigate("Shop")}
             />
           </View>
 
-          <ProgressBanner completed={completed.length} total={TOTAL_LEVELS} />
+          <ProgressBanner
+            completed={
+              levels.filter((level) => completed.includes(level.id)).length
+            }
+            total={levels.length}
+          />
         </View>
       </ScrollView>
 
+      <SaveProgressPrompt onSettings={() => navigation.navigate("Settings")} />
       <CoinInfo
         visible={coinInfo}
         balance={coins}
         onDismiss={() => setCoinInfo(false)}
+        onAds={() => {
+          setCoinInfo(false);
+          navigation.navigate("AdBenefits");
+        }}
       />
     </View>
   );
@@ -133,9 +196,9 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Home.road },
   // `stretch` at the art's exact ratio is a no-op distortion-wise, and unlike
   // `cover` it cannot decide to crop.
-  bg: { position: 'absolute', top: 0, left: 0 },
+  bg: { position: "absolute", top: 0, left: 0 },
   scroll: { flexGrow: 1, paddingHorizontal: Spacing.md },
   spacer: { flex: 1, minHeight: Spacing.xl },
   controls: { gap: Spacing.md },
-  tiles: { flexDirection: 'row', gap: Spacing.sm },
+  tiles: { flexDirection: "row", gap: Spacing.sm },
 });

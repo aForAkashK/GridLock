@@ -1,0 +1,11 @@
+{
+  "mode": "test",
+  "android": {
+    "rewarded": "ca-app-pub-7514537684329731/9460402010",
+    "interstitial": "ca-app-pub-7514537684329731/1605962727"
+  },
+  "ios": {
+    "rewarded": "",
+    "interstitial": ""
+  }
+}

@@ -264,3 +264,68 @@ in silence. Every audio cue is paired with a visual one.
 
 Latency is the requirement: clips are preloaded at startup and never decoded on
 demand. A move sound arriving 100ms late feels broken.
+
+## Daily rewards — reference-based cartoon UI (2026-10-26)
+
+Use the clean city variant of `levels_bg.webp` (`city_bg.webp`), with the top Levels sign removed per the user’s newer request. The Daily header is a small transparent WebP calendar/title/cones graphic matched to the supplied reference. Reuse this clean city art for generic screens; preserve the original titled Levels background. A single static Skia surface paints the blue beveled frame, four-plus-three reward tiles and raised claim-button backing behind real native labels and controls. Gold amounts, green collected states and the highlighted current tile carry the hierarchy. The collected button remains legible gold rather than using a muddy opacity fade. Text, amounts, streaks and claim state stay live; only the fixed title artwork is baked. Layout measurements are local React state, never per-frame game-store writes. Small screens/large fonts scroll naturally.
+
+### Daily typography refinement (2026-10-27)
+
+Use the bundled Fredoka One display face for Daily streak headings,coin amounts,day labels and the claim button. Its regular cut is already rounded/heavy; do not synthesize extra bold. Keep small explanatory text in the system font. The gold collected button uses crisp dark-blue text; the green claim button uses dark-green text. Remove blurred button shadows and reduce amount-text depth so letters remain sharp. Button artwork/layout is retained for this typography-first iteration. Font and license are bundled natively,with no runtime download or font-loader package.
+
+Collected Daily tiles use their green treatment and live collected-status labels; do not add checkmark glyphs to the reward cards (user preference,2026-10-27).
+
+### Shared back navigation (2026-10-27)
+
+All screens with back navigation use `BackButton` and `navigationAssets.back`,a glossy blue WebP derived from Home’s settings icon. The shared control is48 points with8-point hit slop and the same0.92 pressed scale as the settings icon. Screens supply safe-area positioning only; do not draw another grey box,chevron glyph or highlight behind it. Game,Levels,Daily,Settings and the Shop placeholder use this control. Home remains the root and retains its settings icon.
+
+
+## Garage (2026-10-28)
+
+Shop, Inventory and Coin History share one Garage screen with the existing home background, rounded navy cards, gold buttons, Fredoka display face, shared Back control and CoinPill. Previews use actual sprite artwork. Show the price before confirmation, then add ownership; Equip is explicit. Classic is always free. History shows signed amounts and resulting balances, with device-local/history-start boundaries in plain language. Do not sell existing free palette variants or change other vehicle colours.
+
+
+### Shop reference revision (2026-10-28)
+
+Replace large Garage list cards with the user's SHOP/cones reference: clean shared city background, a compact transparent title banner with live subtitle, Cars/Trucks/Buses tabs, navy outer panel, and a three-column grid of colour-matched cards with glossy gold/green controls. One static Skia canvas draws the grid backing. Native labels, images, previews and actions remain interactive. Preserve the six free classic palettes and the purchased Red Racer entitlement; show Red Racer separately at its catalog price. Small utility controls retain Inventory and Coin History. No ticks in equipped states. Use two columns for narrow screens or enlarged text.
+
+
+### Shop and equipment separation — corrected (2026-10-28)
+
+Shop contains sale cosmetics only, displaying price or Owned. Inventory has one independent default entry for each vehicle type/colour, plus owned replacements. Equipped/green means active for that exact slot; Equip/gold selects an alternative only within the same slot. Do not treat palette colours as mutually exclusive across a whole category. Red Racer overrides car:red only. Original mixed colours remain throughout the game.
+
+Purchase confirmation follows the user's blue/cream cartoon reference using a static Skia frame, actual preview image, rounded display typography, real price and balance, blue Cancel, green Buy and red Close controls. Item and controls remain native and accessible; no text, prices or buttons are baked into a new image. Errors remain in the modal, hardware Back cancels, and purchase is separate from equip.
+
+
+Shop subtitle alignment: preserve the title image's exact3:1 ratio. Position the live subtitle within the art's blue strip using proportional bounds (left/right7%,top69%,height20%), then center on both axes. Remove Android font padding and bottom-margin positioning. One-line fit keeps text inside the strip across widths without another raster asset.
+
+
+## Coins & Ad-Free (2026-10-28)
+
+Reuse the shared background, Back control, CoinPill, Fredoka headings and blue/gold cards. Enter from the coin+ information panel or Settings. Clearly separate coin rewards from the five-ad day pass; show current ladder reward, saved pass progress, expiry and exact coin-pass price before confirmation. No technical SDK callback wording belongs in player copy. Keep early-close/no-fill messages clear, Retry available, and optional ads explicit. Settings exposes native privacy choices. Test-only builds visibly identify test ads.
+
+
+Coin+ entry copy (2026-10-29): title Your coins (or Not enough coins for an assist shortfall), with a neutral Coins & Ad-Free destination button. The entry must not tell players to watch ads or imply real-money coin purchases are available before billing is implemented. Reward/ad choices remain explicit inside the destination.
+
+### Coin information popup reference (2026-10-29)
+
+Use a blue beveled panel with an overlapping stack composed from the existing coin WebP, a live Fredoka title/balance, an inset level-reward strip, a glossy gold Coins & Ad-Free action and blue Got it action. One static gradient canvas per backing adds depth without new assets, animation or dependencies. Keep all amounts and labels native and accessible. Use a scrollable modal for compact screens and enlarged fonts, and let hardware Back dismiss it. Preserve insufficient-coin wording for gameplay assists and neutral destination copy.
+
+Ad reward completion states (2026-10-29): coin ladder tiles show Completed in green after their saved daily claim, Next on the current step and Upcoming for later steps; completed bonuses remain visible until local midnight. Arrange tiles in a wrapping three-column grid so status labels fit. An active completed five-ad pass shows5/5, a full bar and a readable green Completed action. Show the actual expiry as the return time rather than promising a midnight reset; coin-bought/premium passes show active without inventing five completed ads. Coin rewards remain unlimited after the bonus ladder.
+
+Settings layout correction (2026-10-29): a single centered,560-point-max scroll container owns horizontal padding and section gaps. Sound rows, volume, ad entries and account card share its bounds. Long labels shrink/wrap while values retain room; links wrap at narrow widths and large font scales. Use bundled Fredoka for the heading, shared Back and existing background. Settings exposes Email support and Request account deletion; the latter opens the dedicated public email-request instructions, not an immediate destructive action.
+
+In-app deletion (2026-10-29): show a clearly labelled Delete account action within Save your progress, destructive confirmation listing lost game data, and Google identity verification for linked saves. Once started, a global pending/retry screen prevents further play; show success only after cloud save, Auth identity and local records are removed. Explain that the Google account remains intact and a minimal security marker is retained. Keep public request instructions for players without the app. No new art or dependency.
+
+Deletion confirmation reference (2026-10-29): replace the platform alert with a red beveled modal, cream content panel, static warning/trash UI symbols, live Fredoka heading, emphasized permanence copy, blue Cancel and red Delete Permanently controls. Preserve all deletion disclosures, including Google account independence and minimal marker retention. Let warning copy scroll while Cancel/Delete remain visible; at compact widths or large font scales, stack the actions and omit the decorative trash symbol to preserve reading space. Hardware Back cancels. Guard repeat confirmation, and on iOS wait for modal dismissal before presenting Google reauthentication. Existing deletion/retry services remain unchanged. No new raster assets or dependencies.
+
+Vehicle arrow refinement (2026-10-29): retain always-visible direction cues, with length reduced from0.52 to0.40 of a cell and stroke from0.085 to0.052 (minimum2 points). A thin1.4-point dark-blue outline at80% opacity separates the pale-white stroke from bright vehicle paint. Keep centered positioning, four-direction rotation and existing animation. This reveals more vehicle artwork without adding asset decoding or drawing passes.
+
+
+Full UI review (2026-10-29): use pure viewport geometry in `screenLayout.ts` for gameplay and the painted Levels heading. Keep title/HUD clear of system chrome and restrict the Levels list viewport below its title. Menu scrolling clips below the top safe inset. Keep live Shop caption text inside its art band with fixed artwork-relative scaling; utility tabs wrap and have 44-point minimum height. Purchase backing follows the measured header and actions stack for compact/enlarged text. Bound win-label scaling inside painted slots. Result Home pops back to Home instead of retaining a completed game underneath it. See `release/QA_REVIEW_2026-10-29.md` for native evidence and remaining device acceptance.
+
+
+Home Ad-Free shortcut (2026-10-30): place a compact gold button with a crossed-AD symbol and live Fredoka Ad-Free label beside the Settings icon. Keep the Settings/coins layout,48-point minimum target and explicit accessibility label/hint. Opens existing Coins & Ad-Free without auto-playing ads or buying passes. Icon uses static native views, adding no image decode or asset weight. Bound artwork-style label scaling so the header fits compact screens; normal and150% text layouts checked natively.
+
+
+Real-device popup/inventory correction (2026-10-30): results must use a native Modal above gameplay, with400ms reveal and dismissal before navigation or ads. Hardware Back follows Home; guard duplicate actions. Keep a native modal node mounted through iOS dismissal. Inventory controls and card art consume the exact same frames from `components/shop/gridLayout.ts`; do not reintroduce an independent flex-wrapped foreground grid. Native OnePlus car/truck/bus cards now stay within matching backgrounds across both rows.

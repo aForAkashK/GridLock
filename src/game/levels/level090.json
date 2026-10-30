@@ -1,0 +1,150 @@
+{
+  "id": 90,
+  "gridSize": 8,
+  "difficulty": "expert",
+  "vehicles": [
+    {
+      "id": "bus-1",
+      "type": "bus",
+      "x": 5,
+      "y": 2,
+      "width": 1,
+      "height": 3,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "truck-2",
+      "type": "truck",
+      "x": 3,
+      "y": 7,
+      "width": 3,
+      "height": 1,
+      "direction": "right",
+      "color": "blue"
+    },
+    {
+      "id": "car-3",
+      "type": "car",
+      "x": 5,
+      "y": 5,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "yellow"
+    },
+    {
+      "id": "car-4",
+      "type": "car",
+      "x": 2,
+      "y": 2,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "green"
+    },
+    {
+      "id": "bus-5",
+      "type": "bus",
+      "x": 0,
+      "y": 7,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "purple"
+    },
+    {
+      "id": "taxi-6",
+      "type": "taxi",
+      "x": 3,
+      "y": 4,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
+    },
+    {
+      "id": "car-7",
+      "type": "car",
+      "x": 0,
+      "y": 1,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "orange"
+    },
+    {
+      "id": "car-8",
+      "type": "car",
+      "x": 6,
+      "y": 3,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "red"
+    },
+    {
+      "id": "car-9",
+      "type": "car",
+      "x": 3,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "blue"
+    },
+    {
+      "id": "bus-10",
+      "type": "bus",
+      "x": 0,
+      "y": 4,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "yellow"
+    },
+    {
+      "id": "car-11",
+      "type": "car",
+      "x": 6,
+      "y": 0,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "green"
+    },
+    {
+      "id": "bus-12",
+      "type": "bus",
+      "x": 7,
+      "y": 5,
+      "width": 1,
+      "height": 3,
+      "direction": "up",
+      "color": "purple"
+    }
+  ],
+  "parMoves": 13,
+  "generation": {
+    "version": 1,
+    "seed": 9000061,
+    "settings": {
+      "vehicles": 12,
+      "minPar": 13,
+      "maxPar": 16,
+      "minBlocked": 3,
+      "minExtraMoves": 1,
+      "minExitWaves": 3,
+      "minScore": 12,
+      "maxHintMs": 5
+    },
+    "metrics": {
+      "initialBlocked": 3,
+      "immediateExits": 5,
+      "extraMoves": 1,
+      "exitWaves": 3,
+      "forcedMoves": 4,
+      "score": 14
+    }
+  }
+}

@@ -151,6 +151,12 @@ export function applyMove(state: GameState, vehicleId: string): MoveResult {
     return { state, move: null };
   }
 
+  return commitMove(state, v, distance);
+}
+
+/** Shared immutable transition for taps and solver expansion. */
+function commitMove(state: GameState, v: Vehicle, distance: number): MoveResult {
+  const vehicleId = v.id;
   const { dx, dy } = DIRECTION_VECTORS[v.direction];
   const exited = isFullyOffBoard(v, dx, dy, distance, state.gridSize);
 
@@ -187,4 +193,21 @@ export function legalMoves(state: GameState): string[] {
     }
   }
   return movable;
+}
+
+/**
+ * All successors, resolving each move against one shared occupancy grid.
+ * This is the solver's expansion path; rules and transitions stay identical
+ * to applyMove without rebuilding the board for every vehicle.
+ */
+export function successors(state: GameState): MoveResult[] {
+  const grid = buildOccupancyGrid(state);
+  const results: MoveResult[] = [];
+  for (const vehicle of state.vehicles) {
+    const distance = travelWithGrid(state, vehicle, grid);
+    if (distance > 0) {
+      results.push(commitMove(state, vehicle, distance));
+    }
+  }
+  return results;
 }

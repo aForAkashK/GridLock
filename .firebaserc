@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "gridlock-bee41"
+  },
+  "targets": {
+    "gridlock-bee41": {
+      "hosting": {
+        "levels": [
+          "gridlock-bee41-levels"
+        ]
+      }
+    }
   }
 }

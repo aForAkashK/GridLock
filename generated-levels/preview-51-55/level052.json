@@ -1,0 +1,130 @@
+{
+  "id": 52,
+  "gridSize": 6,
+  "difficulty": "hard",
+  "vehicles": [
+    {
+      "id": "taxi-1",
+      "type": "taxi",
+      "x": 1,
+      "y": 3,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
+    },
+    {
+      "id": "ambulance-2",
+      "type": "ambulance",
+      "x": 3,
+      "y": 0,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
+    },
+    {
+      "id": "ambulance-3",
+      "type": "ambulance",
+      "x": 5,
+      "y": 0,
+      "width": 1,
+      "height": 2,
+      "direction": "down",
+      "color": "red"
+    },
+    {
+      "id": "car-4",
+      "type": "car",
+      "x": 2,
+      "y": 3,
+      "width": 1,
+      "height": 2,
+      "direction": "up",
+      "color": "red"
+    },
+    {
+      "id": "bus-5",
+      "type": "bus",
+      "x": 0,
+      "y": 1,
+      "width": 3,
+      "height": 1,
+      "direction": "right",
+      "color": "blue"
+    },
+    {
+      "id": "car-6",
+      "type": "car",
+      "x": 4,
+      "y": 4,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "yellow"
+    },
+    {
+      "id": "truck-7",
+      "type": "truck",
+      "x": 3,
+      "y": 2,
+      "width": 3,
+      "height": 1,
+      "direction": "right",
+      "color": "green"
+    },
+    {
+      "id": "car-8",
+      "type": "car",
+      "x": 0,
+      "y": 2,
+      "width": 2,
+      "height": 1,
+      "direction": "right",
+      "color": "purple"
+    },
+    {
+      "id": "bus-9",
+      "type": "bus",
+      "x": 2,
+      "y": 5,
+      "width": 3,
+      "height": 1,
+      "direction": "left",
+      "color": "orange"
+    },
+    {
+      "id": "taxi-10",
+      "type": "taxi",
+      "x": 4,
+      "y": 3,
+      "width": 2,
+      "height": 1,
+      "direction": "left",
+      "color": "red"
+    }
+  ],
+  "parMoves": 12,
+  "generation": {
+    "version": 1,
+    "seed": 5110058,
+    "settings": {
+      "vehicles": 10,
+      "minPar": 11,
+      "maxPar": 14,
+      "minBlocked": 2,
+      "minExtraMoves": 1,
+      "minExitWaves": 2,
+      "minScore": 8,
+      "maxHintMs": 6
+    },
+    "metrics": {
+      "initialBlocked": 3,
+      "immediateExits": 3,
+      "extraMoves": 2,
+      "exitWaves": 2,
+      "forcedMoves": 2,
+      "score": 13
+    }
+  }
+}

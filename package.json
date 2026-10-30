@@ -14,11 +14,20 @@
     "stamp:par": "tsx tools/level-tools/stamp-par.ts",
     "generate:levels": "tsx tools/level-tools/generate-levels.ts",
     "bench:hints": "tsx tools/level-tools/bench-hints.ts",
-    "verify": "npm run typecheck && npm run lint && npm test && npm run validate:levels"
+    "verify": "npm run typecheck && npm run lint && npm test && npm run validate:levels",
+    "prepare:levels": "tsx tools/level-tools/release-levels.ts",
+    "verify:level-release": "tsx tools/level-tools/release-levels.ts --verify",
+    "publish:levels": "firebase deploy --only hosting:levels --project gridlock-bee41",
+    "audit:assets": "tsx tools/assets/audit-assets.ts",
+    "verify:ads-config": "node tools/ads/verify-config.mjs",
+    "verify:ads-release": "node tools/ads/verify-config.mjs --production",
+    "postinstall": "node tools/diagnostics/patch-crashlytics.mjs",
+    "archive:diagnostics": "node tools/diagnostics/archive-android.mjs"
   },
   "dependencies": {
     "@react-native-firebase/app": "^26.4.0",
     "@react-native-firebase/auth": "^26.4.0",
+    "@react-native-firebase/crashlytics": "26.4.0",
     "@react-native-firebase/firestore": "^26.4.0",
     "@react-native-google-signin/google-signin": "^16.1.5",
     "@react-native/new-app-screen": "0.87.1",
@@ -28,6 +37,7 @@
     "react": "19.2.3",
     "react-native": "0.87.1",
     "react-native-gesture-handler": "^3.2.1",
+    "react-native-google-mobile-ads": "17.4.0",
     "react-native-mmkv": "^4.3.2",
     "react-native-nitro-modules": "^0.37.1",
     "react-native-reanimated": "^4.6.0",
@@ -61,5 +71,8 @@
   },
   "engines": {
     "node": ">= 22.11.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.13.6"
   }
 }

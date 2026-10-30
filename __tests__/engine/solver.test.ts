@@ -10,7 +10,8 @@ import {
 import { computeHint } from '../../src/game/engine/hint';
 import { validateLevel } from '../../src/game/engine/levelValidator';
 import { applyMove } from '../../src/game/engine/movement';
-import { isWon } from '../../src/game/models/GameState';
+import { isWon, createInitialState } from '../../src/game/models/GameState';
+import { LEVELS } from '../../src/game/levels';
 import type { GameState } from '../../src/game/models/GameState';
 import type { Direction, Vehicle } from '../../src/game/models/Vehicle';
 import type { Level } from '../../src/game/models/Level';
@@ -195,5 +196,49 @@ describe('validateLevel', () => {
 
   it('keeps the hint budget below the validation budget', () => {
     expect(HINT_NODE_BUDGET).toBeLessThan(200_000);
+  });
+});
+
+/** Exhaustive reference search verifies optimality independently of A* ordering. */
+function breadthFirstPar(start: GameState): number | null {
+  const queue = [{ state: start, depth: 0 }];
+  const seen = new Set([serializeState(start)]);
+  for (let head = 0; head < queue.length; head++) {
+    const { state, depth } = queue[head];
+    if (isWon(state)) { return depth; }
+    for (const vehicle of state.vehicles) {
+      const next = applyMove(state, vehicle.id);
+      if (!next.move) { continue; }
+      const key = serializeState(next.state);
+      if (!seen.has(key)) {
+        seen.add(key);
+        queue.push({ state: next.state, depth: depth + 1 });
+      }
+    }
+  }
+  return null;
+}
+
+describe('A* optimality', () => {
+  it.each(LEVELS.filter(l => l.id <= 50).map(l => [l.id, l] as const))('matches exhaustive BFS par on shipped level %i', (_id, shipped) => {
+    const state = createInitialState(shipped);
+    expect(solve(state)?.moves.length).toBe(breadthFirstPar(state));
+  });
+
+  it('agrees with exhaustive BFS for every direction assignment on a full 2x2 board', () => {
+    const directions: Direction[] = ['up', 'right', 'down', 'left'];
+    for (let configuration = 0; configuration < 256; configuration++) {
+      const vehicles = Array.from({ length: 4 }, (_, i) =>
+        car(String(i), i % 2, Math.floor(i / 2), directions[Math.floor(configuration / (4 ** i)) % 4]),
+      );
+      const start = board(vehicles, 2);
+      const snapshot = JSON.stringify(start);
+      expect(solve(start)?.moves.length ?? null).toBe(breadthFirstPar(start));
+      expect(JSON.stringify(start)).toBe(snapshot);
+    }
+  });
+
+  it('returns no solution when the expansion budget is zero', () => {
+    expect(solve(board([car('a', 0, 0, 'up')]), 0)).toBeNull();
   });
 });

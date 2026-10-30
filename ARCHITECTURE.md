@@ -40,12 +40,12 @@ src/
     engine/          Pure rules. No React, no native imports.
       collision.ts     occupancy grid, bounds, overlap
       movement.ts      applyMove, maxTravelDistance, legalMoves
-      solver.ts        BFS — validation at build time, hints at runtime
+      solver.ts        A* — validation at build time, hints at runtime
       hint.ts          next useful move from the current board
       levelValidator.ts build-time gate (PRD §27)
       undo.ts          bounded snapshot history
     models/          Types shared by every layer
-    levels/          Static JSON + registry
+    levels/          Bundled JSON + fallback registry
     rendering/       Skia components. Draw only.
 
   screens/           One file per route
@@ -82,7 +82,7 @@ This single constraint is what makes four separate features nearly free:
 | Feature | How purity gives it to you |
 |---|---|
 | Undo | A stack of prior states. Nothing to reverse. |
-| Solver | BFS over the same `applyMove`. |
+| Solver | A* over the same immutable movement transitions. |
 | Hints | The solver, run from the current board. |
 | Tests | Call functions directly — no renderer, no mocks. |
 
@@ -128,13 +128,14 @@ dropped JS frame cannot stall the movement the player is watching.
 
 ---
 
-## State: three stores, deliberately separate
+## State: separate stores
 
 | Store | Holds | Changes |
 |---|---|---|
 | `gameStore` | Board, history, hint | Several times per second while playing |
 | `playerStore` | Coins, progress, premium | A few times per level |
 | `settingsStore` | Sound, music, haptics | Rarely |
+| `levelCatalogStore` | Bundled + cached downloadable campaign | On accepted content releases |
 
 Split so a swipe cannot re-render the coin HUD. Sharing one store would make
 that a matter of discipline; separate stores make it structurally impossible.
@@ -180,6 +181,12 @@ Two directions on two schedules, and conflating them loses coins:
 
 ## Adding a level
 
+Compatible remote additions use the background delivery pipeline in
+`src/services/levels/` and the reactive `levelCatalogStore`. See
+`level-content/README.md` for preparing, validating and publishing a release.
+The 1–50 bundled fallback remains pure data and works without the service.
+The following steps apply to bundled levels:
+
 1. Drop `levelNNN.json` in `src/game/levels/`.
 2. Register it in `levels/index.ts`.
 3. Run `npm run validate:levels`.
@@ -198,3 +205,27 @@ component.
 - Rules live in exactly one place: the engine.
 - Nothing awaits the network on a tap path.
 - Per-frame values never enter a store.
+
+## Release integration update (2026-10-26)
+
+Campaign registry now bundles100 immutable JSON boards. `levels/progression.ts` owns chapter visibility and sequential access. Content v2 has a fixed bundled base100; legacy v1/base50 remains published separately. Renderer draws grids from data, caches decoded Skia images and owns independent exit timers. Native feedback preloads cues; no gameplay tap awaits network. Explicit Google recovery uses a durable pending marker to prevent syncing the wrong coin snapshot during a UID switch. See RELEASE_SIGNING.md and RELEASE_CHECKLIST.md for build and acceptance boundaries.
+
+Performance update: supported vehicle shadow shapes share4 baked raster images; VehicleSprite/GameBoard use memoization with stable engine/layout/image references. Runtime artwork remains static WebP; `audit:assets` checks sizes, decoded-pixel budgets and native audio source parity in CI. See `release/performance/README.md` for measured inventory and profiling limits.
+
+Daily rewards: `rewards/dailyPolicy.ts` is pure calendar/streak logic. The coin service owns the award; `coins/dailyLedger.ts` persists a recoverable intent before changing balance/version/receipt. `playerStore` mirrors it for UI, and the existing background sync includes the receipt. Receipt merges never add coin balances. `useDailyRewardStatus` refreshes only on focus, foreground and local midnight. Daily uses existing art and no network on the claim path. Initial ad/skin prices live in `coins/economy.ts`; ad rewards remain disabled. Red Racer purchases use the shared durable coin transaction.
+
+
+Awards: `services/awards/catalog.ts` defines ten stable IDs and rewards; pure policy evaluates bounded progress. Storage records unique perfect solves and the best observed daily streak. `awardService.ts` uses a durable synchronous MMKV claim journal; coin reads, startup, sync and account recovery repair it before any cloud balance comparison. The existing player save carries achievement facts and claim receipts, merged independently of balances. GameScreen records legitimate replay perfects separately from first-completion coins and excludes preview mode. AwardsScreen uses a virtualized native list and existing art/font. See AWARDS.md.
+
+
+Garage: `shop/policy.ts` owns catalog/ownership normalization, `shopService.ts` owns synchronous purchase/equip, and `coins/transaction.ts` journals balance/version/inventory/history together. Startup, sync and account recovery repair pending transactions before comparing cloud balances. Existing player sync unions ownership and restores equipment, while history stays local and bounded to 200 entries. Rendering resolves the selected skin through the sprite registry and keeps rules unchanged. See SHOP.md.
+
+
+Equipment correction: normalized Inventory.slots maps vehicle type:colour to owned catalog-defined replacements. Inventory.selected remains a compatibility mirror of car:red. Legacy category-wide selections are ignored and do not recolour the fleet. equippedSpriteKey resolves by original vehicle type/colour and the catalog replacement list for decoding, readiness and drawing. The store mirrors the slot snapshot; no per-frame writes. Durable transactions and the existing cloud snapshot include slots; no new backend or engine changes.
+
+
+Ads: pure ads/policy owns ladder/pass rules, rewardService owns synchronous durable grants/purchases, coordinator owns preloaded fullscreen lifecycles and sdkAdapter owns deferred native SDK/consent. PlayerStore mirrors monetization metadata. The existing player document merges counters, receipts and expiry independently of version-winner balances. Results navigation shows only ready inventory and always continues on no-fill/failure. Music is suppressed for shown ads/consent forms. See ADS.md for native/configuration and accepted client-authority limits.
+
+Asset readiness: Home schedules bounded warm-up after its background's onLoad and an idle callback. `warmVehicleImages` shares the board's decoded/in-flight registry; cancellation prevents scheduling further sprites after navigation. Android `GridLockAssets` sequentially fills Fresco's existing evictable bitmap cache for a small destination menu set. It never downloads debug/remote URLs, awaits nothing on a tap, and adds no startup gate. An Android rebuild is required for the native helper; no new dependency or iOS pod change.
+
+Account deletion: `auth/deletionFlow.ts` sequences a durable cloud/auth/local journal through an injectable port; `accountDeletion.ts` binds Firebase/MMKV/stores. Sync and bootstrap check the journal before uploading/merging, and server rules lock deleted UIDs against late writes. The global AccountDeletionGate blocks play during retry and until local cleanup completes. The only retained server record is an immutable anti-resurrection UID/time marker. Auth deletion is separate from the cloud transaction, so partial failure explicitly stays pending. Deletion is an explicit account-management flow permitted to await network; gameplay paths remain synchronous.

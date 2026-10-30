@@ -241,3 +241,8 @@ direction cases.
 
 Ship one orientation per vehicle; the renderer rotates it, exactly as it does
 for the arrows.
+
+
+### Scoped user-authorized refresh — 2026-10-30
+
+The user explicitly requested AI-created replacements for police, ambulance and taxi after low-resolution sources were confirmed. This exception applies to those three sprites only. They inherit the approved red-car style, ship as243×512 transparent WebPs and keep face-down orientation. Masters, old files and exact prompts live in `assets/source/special_vehicles/`; only runtime WebPs are imported. Asset validation now rejects vehicle sources shorter than512px on their long edge, in addition to its memory/encoded-size ceilings.

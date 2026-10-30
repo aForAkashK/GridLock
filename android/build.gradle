@@ -19,6 +19,7 @@ buildscript {
         // generates the Firebase config Android needs at build time. Without
         // this plugin the JSON file is silently ignored.
         classpath("com.google.gms:google-services:4.4.2")
+        classpath("com.google.firebase:firebase-crashlytics-gradle:3.0.8")
     }
 }
 
