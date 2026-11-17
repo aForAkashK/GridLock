@@ -14,10 +14,17 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 const variant = process.argv[2] ?? "release";
 if (!["release", "performance", "qa"].includes(variant))
   throw new Error("Use release, performance or qa");
+const archiveReleaseApk = process.argv[3] === "--apk";
+if (
+  process.argv.length > 4 ||
+  (process.argv[3] && !archiveReleaseApk) ||
+  (archiveReleaseApk && variant !== "release")
+)
+  throw new Error("--apk is supported only for release");
 const required = [
   `android/app/build/generated/sourcemaps/react/${variant}/index.android.bundle.map`,
   `android/app/build/outputs/mapping/${variant}/mapping.txt`,
-  variant === "release"
+  variant === "release" && !archiveReleaseApk
     ? "android/app/build/outputs/bundle/release/app-release.aab"
     : `android/app/build/outputs/apk/${variant}/app-${variant}.apk`,
 ];
@@ -28,7 +35,9 @@ const generatedAt = new Date().toISOString();
 const destination = resolve(
   root,
   ".local-artifacts/diagnostics",
-  `${generatedAt.replace(/[:.]/g, "-")}-${variant}`
+  `${generatedAt.replace(/[:.]/g, "-")}-${variant}${
+    archiveReleaseApk ? "-apk" : ""
+  }`
 );
 mkdirSync(destination, { recursive: true });
 const optional = [

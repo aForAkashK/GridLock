@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
+    "build:android:aab": "node --import tsx tools/build-android.ts aab",
+    "build:android:apk": "node --import tsx tools/build-android.ts apk",
+    "build:android:apk:qa": "node --import tsx tools/build-android.ts qa",
+    "build:android:apk:release": "node --import tsx tools/build-android.ts release-apk",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",

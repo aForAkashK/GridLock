@@ -1,5 +1,29 @@
 # Android release signing
 
+Run these commands from the project root.
+
+| Command | Build | Output under `android/app/build/outputs/` |
+| --- | --- | --- |
+| `npm run build:android:aab` | Signed Play bundle, all four architectures | `bundle/release/app-release.aab` |
+| `npm run build:android:apk` | Standalone ARM64 phone-test APK, debug signing | `apk/performance/app-performance.apk` |
+| `npm run build:android:apk:qa` | Standalone ARM64 QA APK with preview hooks, debug signing | `apk/qa/app-qa.apk` |
+| `npm run build:android:apk:release` | Signed universal release APK | `apk/release/app-release.apk` |
+
+Each command archives the exact binary, Hermes source map and R8 mapping under
+`.local-artifacts/diagnostics/`. Release builds also generate and archive
+Crashlytics native symbols. The command prints the artifact and archive paths.
+These commands build artifacts locally. Upload the AAB through Play Console.
+
+Append `-- --offline` when the required Gradle dependencies are cached,
+for example `npm run build:android:apk -- --offline`.
+The standalone test APKs include JavaScript and run without Metro.
+
+Before each new Play upload, increase `versionCode` in
+`android/app/build.gradle` and set the intended `versionName`. The build
+scripts use the values saved there. Run `npm run verify` for code and level
+checks, and `npm run audit:assets` for art budgets before release. Ad mode is
+controlled by `ads.config.json`.
+
 A private RSA upload key has been prepared locally in ignored `android/keystores/upload.p12`, with ignored `android/signing.properties`. Both files must be backed up securely outside this checkout. Do not paste their passwords into chat, commit them, or regenerate a key for an existing Play listing.
 
 `python3 tools/prepare-android-signing.py` creates missing credentials only. Release builds fail without signing configuration and never fall back to the debug key.
