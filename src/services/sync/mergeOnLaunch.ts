@@ -1,3 +1,4 @@
+import { decodeLevelStarMarks, type LevelStars } from "../levels/ratings";
 import {
   monetization,
   mergeMonetization,
@@ -53,6 +54,7 @@ export type CloudPlayerState = {
   /** Absent on documents written before progress sync existed. */
   completedLevels?: number[];
   currentLevel?: number;
+  levelStars?: LevelStars;
 };
 
 export type MergeOutcome = "local_wins" | "cloud_wins" | "no_cloud_state";
@@ -98,11 +100,13 @@ export function mergeCloudProgress(cloud: CloudPlayerState | null): {
 } {
   const local = {
     completedLevels: getJSON<number[]>(StorageKeys.completedLevels, []),
+    levelStars: getJSON<LevelStars>(StorageKeys.levelStars, {}),
     currentLevel: getNumber(StorageKeys.currentLevel, 1),
   };
   const { merged, localChanged, cloudBehind } = mergeProgress(local, cloud);
   if (localChanged) {
     setJSON(StorageKeys.completedLevels, merged.completedLevels);
+    setJSON(StorageKeys.levelStars, merged.levelStars ?? {});
     storage.set(StorageKeys.currentLevel, merged.currentLevel);
   }
   return { localChanged, cloudBehind };
@@ -163,6 +167,7 @@ export async function fetchCloudPlayerState(
       : {}),
     syncVersion: typeof data.syncVersion === "number" ? data.syncVersion : 0,
     completedLevels: sanitizeLevels(data.completedLevels),
+    levelStars: decodeLevelStarMarks(data.levelStarMarks),
     currentLevel:
       typeof data.currentLevel === "number" ? data.currentLevel : undefined,
   };

@@ -1,0 +1,26 @@
+{
+  "tool": "built-in imagegen",
+  "reference": "User-supplied Level Complete / Perfect Solve comparison",
+  "assets": [
+    {
+      "id": "clear",
+      "prompt": "Use case: ui-mockup. Asset type: isolated static mobile game victory dialog backing sprite. Reference shows two UI designs; produce ONLY ONE cutout panel as specified. Front-facing straight clean symmetric glossy premium cartoon 3D game UI. Tall portrait approx 2:3. Panel and decor tightly fill image with small margins, fully visible on genuinely TRANSPARENT alpha surround. Rich navy blue interior, extra thick luminous cyan beveled rounded double frame, tiny scattered colorful confetti near upper sides, subtle gold radial rays centered in star area, preserve large dark clear area throughout for code to overlay controls. At near y=32% of full panel center leave EMPTY space for game to overlay stars. At y=45% and y=54% game will overlay score+reward chips; leave these spaces empty dark blue. All lower half down to bottom trim empty unbroken navy for live button stack. Absolutely no stars, no numbers, no buttons, no HUD, no game background, no mockup, no other panels. The decorative ribbon and crest should occupy only the uppermost 25%, keep ribbon lettering perfectly spelled. Use LEFT-side visual style only: glossy royal blue ribbon with gold-white chunky outlined letters exactly \"Level Complete!\" and two crossed checkered flags and green laurels above, centered.",
+      "output": "assets/ui/panels/result_clear.webp"
+    },
+    {
+      "id": "perfect",
+      "prompt": "Use case: ui-mockup. Asset type: isolated static mobile game victory dialog backing sprite. Reference shows two UI designs; produce ONLY ONE cutout panel as specified. Front-facing straight clean symmetric glossy premium cartoon 3D game UI. Tall portrait approx 2:3. Panel and decor tightly fill image with small margins, fully visible on genuinely TRANSPARENT alpha surround. Rich navy blue interior, extra thick luminous cyan beveled rounded double frame, tiny scattered colorful confetti near upper sides, subtle gold radial rays centered in star area, preserve large dark clear area throughout for code to overlay controls. At near y=32% of full panel center leave EMPTY space for game to overlay stars. At y=45% and y=54% game will overlay score+reward chips; leave these spaces empty dark blue. All lower half down to bottom trim empty unbroken navy for live button stack. Absolutely no stars, no numbers, no buttons, no HUD, no game background, no mockup, no other panels. The decorative ribbon and crest should occupy only the uppermost 25%, keep ribbon lettering perfectly spelled. Use RIGHT-side visual style only: glossy vivid red ribbon with gold-white chunky outlined letters exactly \"Perfect Solve!\" and large gold crown with red jewel and green laurels above, centered.",
+      "output": "assets/ui/panels/result_perfect.webp"
+    },
+    {
+      "id": "silver",
+      "prompt": "Use case: stylized-concept. Asset type: isolated compact unearned rating star WebP master. Produce one five-point star inspired by the unearned silver blue star in left panel in the reference. Chunky beveled faceted jewel-like 3D game icon with rounded points, centered upright, even symmetrical outline. Light steel blue center, dark navy outline, specular highlights, upper-left light. No gold, glow, badge, circle, cast shadow, additional stars or text. Transparent surrounding and clear small margin.",
+      "output": "assets/ui/icons/result_star_silver.webp"
+    },
+    {
+      "id": "skipped",
+      "prompt": "Use case: ui-mockup. Asset type: isolated static game result dialog backing, model the LEFT blue flag panel from the reference. One tall portrait roughly 2:3 blue glossy beveled cyan frame and thick navy interior, two crossed checkered flags and lime green laurels above a chunky blue ribbon, spelling exactly \"Level Skipped\" in creamy golden outlined toy-game letters. Ribbon and crest occupy only the upper quarter. Small cyan sunburst and confetti below ribbon. Leave the rest of the whole panel beautifully dark navy and EMPTY for dynamic UI overlays. No stars, numbers, buttons, extra writing, game scenery or other panels. Entire shape centered with small margin on genuinely transparent alpha background.",
+      "output": "assets/ui/panels/result_skipped.webp"
+    }
+  ]
+}

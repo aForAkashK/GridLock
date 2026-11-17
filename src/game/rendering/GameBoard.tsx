@@ -36,6 +36,7 @@ import { equippedSpriteKey, useVehicleImages } from "./sprites";
 
 /** Small grace period so the exit animation always finishes before unmount. */
 const EXIT_GRACE_MS = 80;
+const LAST_LEVEL_WITH_ARROWS = 10;
 
 type Props = {
   level: Level;
@@ -67,6 +68,7 @@ function GameBoardView({
   );
 
   const reducedMotion = useReducedMotion();
+  const showDirectionArrows = level.id <= LAST_LEVEL_WITH_ARROWS;
   const toDraw = vehicles ?? level.vehicles;
   const skins = usePlayerStore((s) => s.equippedSkins);
   const resolveSprite = useCallback(
@@ -229,6 +231,7 @@ function GameBoardView({
                   vehicle={v}
                   layout={layout}
                   sprite={images[resolveSprite(v)]!}
+                  showDirectionArrow={showDirectionArrows}
                   reducedMotion={reducedMotion}
                   blockedSignal={blockedVehicleId === v.id ? blockedAt : 0}
                   hinted={hintVehicleId === v.id}
@@ -246,6 +249,7 @@ function GameBoardView({
                 vehicle={v}
                 layout={layout}
                 sprite={images[resolveSprite(v)]!}
+                showDirectionArrow={showDirectionArrows}
                 reducedMotion={reducedMotion}
                 exiting
               />
@@ -267,7 +271,7 @@ function GameBoardView({
                 disabled={!spritesReady}
                 accessibilityRole="button"
                 accessibilityLabel={`${vehicle.color} ${vehicle.type}, facing ${vehicle.direction}`}
-                accessibilityHint="Activate to drive in the arrow direction"
+                accessibilityHint="Activate to drive forward"
                 onPress={() => onCellTap?.(vehicle.x, vehicle.y)}
                 style={[
                   styles.accessibilityTarget,

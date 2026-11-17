@@ -99,3 +99,16 @@ it("keeps the reveal scheduled while completion rewards update the parent props"
   act(() => jest.advanceTimersByTime(200));
   expect(modal().props.visible).toBe(true);
 });
+
+it("shows the earned coins alongside a perfect three-star result", () => {
+  act(() => {
+    tree = create(<LevelCompleteModal {...props()} />);
+  });
+  act(() => jest.advanceTimersByTime(400));
+  expect(
+    tree.root.findAllByProps({ accessibilityLabel: "3 of 3 stars" })
+  ).toHaveLength(1);
+  expect(
+    tree.root.findAllByType("Text" as never).map((node) => node.props.children)
+  ).toContain("+10 coins earned");
+});

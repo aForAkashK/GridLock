@@ -52,7 +52,7 @@ tint: red, blue, yellow, green, purple, orange.
 
 They must be distinguishable at a glance **and by shape**, not colour alone —
 roughly 1 in 12 men has some colour vision deficiency, and red/green is the
-common axis. Vehicle length, silhouette and the direction arrow all carry
+common axis. Vehicle length, silhouette and facing direction all carry
 information independently of hue.
 
 ### Board
@@ -77,7 +77,7 @@ screen, so the eye goes to what the player can actually interact with.
 Each vehicle carries, from most to least important:
 
 1. **Silhouette** — readable at thumbnail size. This is the primary identifier.
-2. **Direction arrow** — where it will go. Never ambiguous.
+2. **Facing direction** — where it will go. Levels 1–10 reinforce this with an arrow.
 3. **Body colour** — distinguishes it from neighbours.
 4. **Shadow** — grounds it on the board.
 5. **Windows and highlights** — sells the toy-like quality.
@@ -85,14 +85,11 @@ Each vehicle carries, from most to least important:
 A vehicle occupying 2×1 cells is drawn to fill that footprint with a small
 inset, so adjacent vehicles read as separate objects rather than a solid block.
 
-### The arrow is the most important element
+### Direction cues
 
-It is the only thing telling the player what a tap will do. It must be legible
-at the smallest cell size on the smallest supported device, high-contrast
-against the body colour, and unambiguous at a glance.
-
-Arrows sit on the vehicle rather than beside it, so the association is
-immediate.
+In levels 1–10, arrows sit on the vehicle and stay legible at the smallest
+supported cell size. Starting at level 11, the vehicle artwork shows which
+way it faces. Screen reader labels announce the direction at every level.
 
 ---
 
@@ -233,8 +230,7 @@ and tappable, leading to the coin-earning options rather than doing nothing.
 
 ## Accessibility
 
-- **Never colour alone.** Shape, arrow and length all carry the same
-  information.
+- **Never colour alone.** Shape, orientation and length also identify vehicles.
 - **44pt minimum touch target**, including the small action buttons.
 - **Skia draws are invisible to screen readers.** Anything that must be
   announced needs an accessible RN view layered over the canvas — plan for it
@@ -307,6 +303,8 @@ Reuse the shared background, Back control, CoinPill, Fredoka headings and blue/g
 
 Coin+ entry copy (2026-10-29): title Your coins (or Not enough coins for an assist shortfall), with a neutral Coins & Ad-Free destination button. The entry must not tell players to watch ads or imply real-money coin purchases are available before billing is implemented. Reward/ad choices remain explicit inside the destination.
 
+Buy Coins adds a dedicated entry to the coin popup when Android checkout is configured, and remains previewable in development and QA builds. It reuses the city art, Back button and live coin balance. Four illustrated packs appear in two columns on standard phones and one column at narrow widths or larger font sizes. Android uses localized Google Play prices and opens Play checkout from the price button. Show pending, credited and retry states in the storefront. The iOS preview shows illustrative India prices while checkout is unavailable.
+
 ### Coin information popup reference (2026-10-29)
 
 Use a blue beveled panel with an overlapping stack composed from the existing coin WebP, a live Fredoka title/balance, an inset level-reward strip, a glossy gold Coins & Ad-Free action and blue Got it action. One static gradient canvas per backing adds depth without new assets, animation or dependencies. Keep all amounts and labels native and accessible. Use a scrollable modal for compact screens and enlarged fonts, and let hardware Back dismiss it. Preserve insufficient-coin wording for gameplay assists and neutral destination copy.
@@ -319,7 +317,7 @@ In-app deletion (2026-10-29): show a clearly labelled Delete account action with
 
 Deletion confirmation reference (2026-10-29): replace the platform alert with a red beveled modal, cream content panel, static warning/trash UI symbols, live Fredoka heading, emphasized permanence copy, blue Cancel and red Delete Permanently controls. Preserve all deletion disclosures, including Google account independence and minimal marker retention. Let warning copy scroll while Cancel/Delete remain visible; at compact widths or large font scales, stack the actions and omit the decorative trash symbol to preserve reading space. Hardware Back cancels. Guard repeat confirmation, and on iOS wait for modal dismissal before presenting Google reauthentication. Existing deletion/retry services remain unchanged. No new raster assets or dependencies.
 
-Vehicle arrow refinement (2026-10-29): retain always-visible direction cues, with length reduced from0.52 to0.40 of a cell and stroke from0.085 to0.052 (minimum2 points). A thin1.4-point dark-blue outline at80% opacity separates the pale-white stroke from bright vehicle paint. Keep centered positioning, four-direction rotation and existing animation. This reveals more vehicle artwork without adding asset decoding or drawing passes.
+Vehicle arrow refinement (2026-10-29): arrow length reduced from0.52 to0.40 of a cell and stroke from0.085 to0.052 (minimum2 points). A thin1.4-point dark-blue outline at80% opacity separates the pale-white stroke from bright vehicle paint. Keep centered positioning, four-direction rotation and existing animation. This reveals more vehicle artwork without adding asset decoding or drawing passes.
 
 
 Full UI review (2026-10-29): use pure viewport geometry in `screenLayout.ts` for gameplay and the painted Levels heading. Keep title/HUD clear of system chrome and restrict the Levels list viewport below its title. Menu scrolling clips below the top safe inset. Keep live Shop caption text inside its art band with fixed artwork-relative scaling; utility tabs wrap and have 44-point minimum height. Purchase backing follows the measured header and actions stack for compact/enlarged text. Bound win-label scaling inside painted slots. Result Home pops back to Home instead of retaining a completed game underneath it. See `release/QA_REVIEW_2026-10-29.md` for native evidence and remaining device acceptance.

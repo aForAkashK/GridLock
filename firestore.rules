@@ -11,10 +11,9 @@ rules_version = '2';
  *
  * Note on trust: these rules stop a player touching SOMEONE ELSE'S balance.
  * They cannot stop a player editing their OWN balance, because the client is
- * authoritative over coins by design (DECISIONS.md D-004). That is an accepted
- * trade while coins are only ever earned through play. Before coins are sold
- * for real money, balance mutation has to move behind Cloud Functions and
- * these rules must drop client writes to `coins` entirely.
+ * authoritative over coins by design (DECISIONS.md D-004). Direct Android
+ * checkout verifies purchase signatures on the device and keeps this trust
+ * model (D-034).
  */
 service cloud.firestore {
 

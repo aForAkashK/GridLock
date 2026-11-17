@@ -1,7 +1,7 @@
 import {
   gameplayLayout,
   levelSelectLayout,
-  ACTIONS_HEIGHT,
+  ACTION_SIZE,
 } from "../../src/game/rendering/screenLayout";
 it.each([
   [320, 568, 24, 24],
@@ -19,8 +19,9 @@ it.each([
         result.sign.top + result.sign.height + 12 - 0.001
       );
       expect(result.boardTop + result.boardSize).toBeLessThanOrEqual(
-        height - ACTIONS_HEIGHT - 12 + 0.001
+        height - result.actionsHeight - 12 + 0.001
       );
+      expect(result.actionsHeight - bottom).toBeGreaterThanOrEqual(ACTION_SIZE);
       expect(result.boardLeft).toBeGreaterThanOrEqual(0);
       expect(result.boardLeft + result.boardSize).toBeLessThanOrEqual(width);
       expect(result.background.top).toBeLessThanOrEqual(0);

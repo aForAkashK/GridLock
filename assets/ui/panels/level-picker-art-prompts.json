@@ -1,0 +1,9 @@
+{
+  "reference": "codex-clipboard-7eb11e2e-e4c3-4716-866f-177c263fbada.png",
+  "prompt": "Use case: ui-mockup. Sprite atlas of three separate cartoon mobile game tile backgrounds in a single HORIZONTAL ROW with wide transparent gutters and empty transparent margins, all same size and same vertical alignment, on genuinely TRANSPARENT alpha background. Source theme reference supplied. Left: bright cyan blue glossy beveled rounded tile with blank face, subtle specular gloss and dark navy outline. Center: golden yellow glossy beveled rounded tile with a tight cream glow and a single bold WHITE PLAY TRIANGLE centered in the lower third, leaving upper half empty. Right: muted slate lavender glossy beveled rounded tile with a single bold SILVER PADLOCK centered in lower third, upper half empty. All tiles near-square with a screen ratio 1.12:1. Each has crisp rounded outline and shallow drop shadow; glyphs inside tile faces. No digits, no letters, no stars, no extra rows or shapes. Do not overlap the tile cells. The blue face will receive shallow star strip and numbers at runtime.",
+  "master": "/Users/akashkumar/.codex/generated_images/01a174d1-88e4-71b1-b77a-b4e8d068ed37/exec-9e51423e-7aca-42d4-9b2e-735dc696daa5.png",
+  "assets": [
+    "level_tile_active.webp",
+    "level_tile_completed.webp"
+  ]
+}

@@ -1,12 +1,14 @@
 /** Shared, neutral entry to coin rewards and ad-free options. */
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import {
@@ -16,6 +18,8 @@ import {
   vec,
 } from "@shopify/react-native-skia";
 import { COIN_REWARDS } from "../services/coins/types";
+import { canUseEmulatorQA } from "../services/debug/emulatorQA";
+import { isPlayCheckoutConfigured } from "../services/purchases/coinCatalog";
 import { GameTypography } from "../theme/typography";
 
 const coin = require("../../assets/ui/icons/coin.webp");
@@ -26,6 +30,7 @@ type Props = {
   needed?: number;
   onDismiss: () => void;
   onAds?: () => void;
+  onBuyCoins?: () => void;
 };
 
 /** Static gradients, laid out once; text and touch targets remain native. */
@@ -110,17 +115,35 @@ export function CoinInfo({
   needed,
   onDismiss,
   onAds,
+  onBuyCoins,
 }: Props) {
-  if (!visible) {
-    return null;
-  }
+  const { height } = useWindowDimensions();
+  const showBuyCoins =
+    Boolean(onBuyCoins) && (isPlayCheckoutConfigured || canUseEmulatorQA());
+  const compactOffers = showBuyCoins && height < 710;
+  const pendingPurchaseNavigation = useRef<(() => void) | null>(null);
+  const openBuyCoins = () => {
+    if (!onBuyCoins || pendingPurchaseNavigation.current) return;
+    if (Platform.OS === "ios") {
+      pendingPurchaseNavigation.current = onBuyCoins;
+      onDismiss();
+    } else {
+      onDismiss();
+      onBuyCoins();
+    }
+  };
   return (
     <Modal
-      visible
+      visible={visible}
       transparent
       animationType="fade"
       statusBarTranslucent
       onRequestClose={onDismiss}
+      onDismiss={() => {
+        const navigate = pendingPurchaseNavigation.current;
+        pendingPurchaseNavigation.current = null;
+        navigate?.();
+      }}
     >
       <View style={styles.backdrop}>
         <ScrollView
@@ -128,7 +151,13 @@ export function CoinInfo({
           contentContainerStyle={styles.scrollBody}
           bounces={false}
         >
-          <View style={styles.composition} accessibilityViewIsModal>
+          <View
+            style={[
+              styles.composition,
+              compactOffers && styles.compactComposition,
+            ]}
+            accessibilityViewIsModal
+          >
             <View style={styles.pile} pointerEvents="none" accessible={false}>
               <Image source={coin} style={[styles.pileCoin, styles.coinLeft]} />
               <Image
@@ -141,7 +170,7 @@ export function CoinInfo({
               />
               <Image source={coin} style={[styles.pileCoin, styles.coinHero]} />
             </View>
-            <View style={styles.card}>
+            <View style={[styles.card, compactOffers && styles.compactCard]}>
               <Gloss panel />
               <Text accessibilityRole="header" style={styles.title}>
                 {needed !== undefined ? "Not enough coins" : "Your "}
@@ -183,12 +212,30 @@ export function CoinInfo({
                 Collect Daily gifts and Awards bonuses, or explore more coin and
                 ad-free options.
               </Text>
+              {showBuyCoins ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={openBuyCoins}
+                  style={({ pressed }) => [
+                    styles.button,
+                    compactOffers && styles.compactButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Gloss gold />
+                  <Text style={styles.primaryLabel}>Buy Coins</Text>
+                  <Text style={styles.arrow} accessible={false}>
+                    ›
+                  </Text>
+                </Pressable>
+              ) : null}
               {onAds ? (
                 <Pressable
                   accessibilityRole="button"
                   onPress={onAds}
                   style={({ pressed }) => [
                     styles.button,
+                    compactOffers && styles.compactButton,
                     pressed && styles.pressed,
                   ]}
                 >
@@ -209,6 +256,7 @@ export function CoinInfo({
                 onPress={onDismiss}
                 style={({ pressed }) => [
                   styles.button,
+                  compactOffers && styles.compactButton,
                   pressed && styles.pressed,
                 ]}
               >
@@ -234,7 +282,9 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 0, maxHeight: "100%" },
   scrollBody: { alignItems: "center", paddingBottom: 8 },
   composition: { width: "100%", maxWidth: 440, paddingTop: 82 },
+  compactComposition: { paddingTop: 64 },
   card: { padding: 22, paddingTop: 29, paddingBottom: 23, gap: 14 },
+  compactCard: { paddingTop: 38, paddingBottom: 14, gap: 9 },
   pile: {
     position: "absolute",
     top: 0,
@@ -332,6 +382,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 9,
   },
+  compactButton: { minHeight: 52, paddingVertical: 8 },
   buttonCoin: { width: 35, height: 35 },
   primaryLabel: {
     flexShrink: 1,

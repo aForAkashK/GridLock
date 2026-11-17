@@ -1,3 +1,5 @@
+import { awardsProgress, type AwardsProgress } from "../awards/policy";
+import { mergeLevelStars, type LevelStars } from "../levels/ratings";
 import { monetization, type Monetization } from "../ads/policy";
 import { getJSON, setJSON, storage, StorageKeys } from "../storage/mmkv";
 import { appendCoinHistory, type CoinEntry } from "./history";
@@ -6,7 +8,14 @@ type Transaction = {
   entry: CoinEntry;
   versionAfter: number;
   recordHistory?: boolean;
+  playReceiptId?: string;
   inventoryAfter?: Inventory;
+  levelResultAfter?: {
+    completedLevels: number[];
+    currentLevel: number;
+    stars: LevelStars;
+    awards: AwardsProgress;
+  };
   monetizationAfter?: Monetization;
 };
 function apply(value: Transaction): void {
@@ -19,8 +28,26 @@ function apply(value: Transaction): void {
   }
   if (value.monetizationAfter)
     setJSON(StorageKeys.monetization, value.monetizationAfter);
+  if (value.levelResultAfter) {
+    const result = value.levelResultAfter;
+    setJSON(StorageKeys.completedLevels, result.completedLevels);
+    storage.set(StorageKeys.currentLevel, result.currentLevel);
+    setJSON(StorageKeys.levelStars, mergeLevelStars(result.stars));
+    setJSON(StorageKeys.awardsProgress, awardsProgress(result.awards));
+  }
   if (value.recordHistory !== false) appendCoinHistory(value.entry);
+  if (value.playReceiptId) {
+    storage.set(playReceiptKey(value.playReceiptId), true);
+  }
   storage.remove(StorageKeys.coinTransaction);
+}
+
+function playReceiptKey(receiptId: string): string {
+  return `${StorageKeys.playPurchaseReceipts}.${receiptId}`;
+}
+
+export function hasPlayCoinReceipt(receiptId: string): boolean {
+  return storage.getBoolean(playReceiptKey(receiptId)) === true;
 }
 export function commitCoinTransaction(value: Transaction): void {
   setJSON(StorageKeys.coinTransaction, value);

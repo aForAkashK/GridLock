@@ -52,6 +52,7 @@ type Props = {
   hinted?: boolean;
   /** Decoded sprite, loaded once per board by `useVehicleImages`. */
   sprite: SkImage;
+  showDirectionArrow: boolean;
   reducedMotion?: boolean;
 };
 
@@ -62,6 +63,7 @@ function VehicleSpriteView({
   blockedSignal = 0,
   hinted = false,
   sprite,
+  showDirectionArrow,
   reducedMotion = false,
 }: Props) {
   const r = vehicleRect(layout, vehicle);
@@ -191,8 +193,8 @@ function VehicleSpriteView({
   const aSize = arrowSize(layout.cellSize);
   const aStroke = arrowStroke(layout.cellSize);
   const arrowPath = useMemo(
-    () => makeArrowPath(c.x, c.y, aSize),
-    [c.x, c.y, aSize]
+    () => (showDirectionArrow ? makeArrowPath(c.x, c.y, aSize) : null),
+    [showDirectionArrow, c.x, c.y, aSize]
   );
   const shadow = useMemo(
     () => vehicleShadow(vehicle.width, vehicle.height),
@@ -266,28 +268,30 @@ function VehicleSpriteView({
 
       {/* Arrow, rotated into the vehicle's direction. Drawn twice: a dark
           copy underneath keeps it legible on light body colours. */}
-      <Group
-        origin={c}
-        transform={[{ rotate: arrowRotation(vehicle.direction) }]}
-      >
-        <Path
-          path={arrowPath}
-          style="stroke"
-          strokeWidth={aStroke + 1.4}
-          strokeCap="round"
-          strokeJoin="round"
-          color="#173047"
-          opacity={0.8}
-        />
-        <Path
-          path={arrowPath}
-          style="stroke"
-          strokeWidth={aStroke}
-          strokeCap="round"
-          strokeJoin="round"
-          color="#F5FAFF"
-        />
-      </Group>
+      {arrowPath ? (
+        <Group
+          origin={c}
+          transform={[{ rotate: arrowRotation(vehicle.direction) }]}
+        >
+          <Path
+            path={arrowPath}
+            style="stroke"
+            strokeWidth={aStroke + 1.4}
+            strokeCap="round"
+            strokeJoin="round"
+            color="#173047"
+            opacity={0.8}
+          />
+          <Path
+            path={arrowPath}
+            style="stroke"
+            strokeWidth={aStroke}
+            strokeCap="round"
+            strokeJoin="round"
+            color="#F5FAFF"
+          />
+        </Group>
+      ) : null}
     </Group>
   );
 }

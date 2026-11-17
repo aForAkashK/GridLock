@@ -1,15 +1,15 @@
 /**
  * Level complete.
  *
- * Built on `assets/ui/bg/level_clear.webp`, which carries the stars, the
- * "Cleared!" banner and the confetti — so this component renders no title.
- *
  * Appears ~400ms after the last vehicle escapes so the exit animation gets to
  * breathe; the escape is the most satisfying moment in the game and a modal
  * landing on top of it steals that (GAME_DESIGN.md).
  */
 
 import React, { useEffect, useRef, useState } from "react";
+import { LevelStars } from "./LevelStars";
+import { rateSolve } from "../services/levels/ratings";
+import { GameTypography } from "../theme/typography";
 import { breadcrumb, diagnosticContext } from "../services/diagnostics/client";
 import {
   Image,
@@ -22,8 +22,25 @@ import {
   View,
 } from "react-native";
 
-const PANEL = require("../../assets/ui/bg/level_clear.webp");
-const PANEL_ASPECT = 1105 / 1423;
+const COIN = require("../../assets/ui/icons/coin.webp");
+const RESULT_ART = {
+  clear: {
+    src: require("../../assets/ui/panels/result_clear.webp"),
+    title: "Level Complete!",
+    aspect: 2 / 3,
+  },
+  perfect: {
+    src: require("../../assets/ui/panels/result_perfect.webp"),
+    title: "Perfect Solve!",
+    aspect: 2 / 3,
+  },
+  skip: {
+    src: require("../../assets/ui/panels/result_skipped.webp"),
+    title: "Level Skipped",
+    aspect: 2 / 3,
+  },
+} as const;
+
 /**
  * The three button assets were cropped separately, so their aspect ratios
  * differ (4.44, 4.16, 4.07). Sizing them all from one ratio would leave them
@@ -46,28 +63,6 @@ const BUTTON_ART = {
   },
 } as const;
 
-/**
- * The panel's blank stat slot, measured from the artwork: x 240..865,
- * y 509..674 of 1105 x 1423. Text is placed into it as fractions so it stays
- * put at any panel size.
- */
-const SLOT = {
-  left: 240 / 1105,
-  right: 865 / 1105,
-  top: 509 / 1423,
-  bottom: 674 / 1423,
-};
-/**
- * The clear band below the stat slot, as fractions of panel height. Buttons
- * are sized to FIT this band rather than to a share of the panel's width —
- * three stacked at 76% width overflowed the panel entirely.
- */
-const BUTTONS_TOP = 0.515;
-// Stops short of the panel's actual foot (0.9775). Running the band right to
-// the edge left the last button touching — and visually spilling past — the
-// rounded corner, which reads as overflow even when it technically fits.
-const BUTTONS_BOTTOM = 0.935;
-
 const REVEAL_DELAY_MS = 400;
 
 type Props = {
@@ -77,6 +72,7 @@ type Props = {
   coinsAwarded: number;
   /** The board was cleared by paying to Skip, not by solving it. */
   skipped: boolean;
+  preview?: boolean;
   hasNextLevel: boolean;
   onNext: () => void;
   onReplay: () => void;
@@ -89,6 +85,7 @@ export function LevelCompleteModal({
   parMoves,
   coinsAwarded,
   skipped,
+  preview = false,
   hasNextLevel,
   onNext,
   onReplay,
@@ -138,34 +135,21 @@ export function LevelCompleteModal({
     return () => clearTimeout(timer);
   }, [visible]);
 
-  // Explicit size — an Image with only inset-0 has no definite box and falls
-  // back to intrinsic size treated as dp (see DESIGN.md).
-  const panelW = Math.min(width * 0.96, 440);
-  const panelH = panelW / PANEL_ASPECT;
-  const maxH = height * 0.82;
-  const w = panelH > maxH ? maxH * PANEL_ASPECT : panelW;
-  const h = w / PANEL_ASPECT;
-
-  // Type scales with the panel so it holds its proportions on any screen.
-  const statSize = w * 0.043;
-
-  // Fit the stack to the band: pick the width whose resulting heights, plus
-  // the gaps, exactly fill it. Solved rather than guessed, so the buttons are
-  // always as large as the panel allows.
-  const buttonArt = hasNextLevel
+  const rating = skipped ? 0 : rateSolve(moveCount, parMoves);
+  const art = RESULT_ART[skipped ? "skip" : rating === 3 ? "perfect" : "clear"];
+  // Alignment follows the 512×768 art. Scores use live round values.
+  const panelWidth = Math.min(width - 20, height * 0.89 * art.aspect, 420);
+  const panelHeight = panelWidth / art.aspect;
+  const buttons = hasNextLevel
     ? [BUTTON_ART.next, BUTTON_ART.replay, BUTTON_ART.home]
     : [BUTTON_ART.replay, BUTTON_ART.home];
-  const gap = h * 0.012;
-  const band = (BUTTONS_BOTTOM - BUTTONS_TOP) * h;
-  const inverseAspects = buttonArt.reduce((sum, b) => sum + 1 / b.aspect, 0);
+  const gap = panelHeight * 0.012;
   const buttonW = Math.min(
-    (band - gap * (buttonArt.length - 1)) / inverseAspects,
-    w * 0.9
+    panelWidth * 0.82,
+    (panelHeight * 0.345 - gap * (buttons.length - 1)) /
+      buttons.reduce((total, button) => total + 1 / button.aspect, 0)
   );
-
-  // A skipped level was never solved, so move count, par and the perfect-solve
-  // badge would all be claiming credit the player did not earn.
-  const perfect = !skipped && parMoves !== undefined && moveCount <= parMoves;
+  const reward = preview ? "Practice round" : `+${coinsAwarded} coins earned`;
 
   return (
     <Modal
@@ -182,74 +166,78 @@ export function LevelCompleteModal({
       onDismiss={finishDismiss}
     >
       <View style={styles.backdrop} accessibilityViewIsModal>
-        <View style={{ width: w, height: h }}>
+        <View style={{ width: panelWidth, height: panelHeight }}>
           <Image
-            source={PANEL}
-            style={{ width: w, height: h }}
-            resizeMode="contain"
+            source={art.src}
+            style={{ width: panelWidth, height: panelHeight }}
+            resizeMode="stretch"
+            fadeDuration={0}
+            accessible
+            accessibilityRole="header"
+            accessibilityLabel={art.title}
             accessibilityIgnoresInvertColors
           />
-
-          {/* Stats, dropped into the panel's blank slot. */}
+          {!skipped ? (
+            <>
+              <View
+                accessible
+                accessibilityLabel={`${rating} of 3 stars`}
+                style={[
+                  styles.starSlot,
+                  { top: panelHeight * 0.239, height: panelHeight * 0.15 },
+                ]}
+              >
+                <LevelStars
+                  rating={rating}
+                  size={panelWidth * 0.195}
+                  celebration
+                />
+              </View>
+              <View
+                style={[
+                  styles.statSlot,
+                  { top: panelHeight * 0.401, height: panelHeight * 0.071 },
+                ]}
+              >
+                <Text
+                  style={[styles.stat, { fontSize: panelWidth * 0.052 }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {moveCount} {moveCount === 1 ? "move" : "moves"}
+                  {parMoves !== undefined ? ` · par ${parMoves}` : ""}
+                </Text>
+              </View>
+            </>
+          ) : null}
           <View
             style={[
-              styles.slot,
+              styles.rewardSlot,
               {
-                left: SLOT.left * w,
-                width: (SLOT.right - SLOT.left) * w,
-                top: SLOT.top * h,
-                height: (SLOT.bottom - SLOT.top) * h,
+                top: panelHeight * (skipped ? 0.389 : 0.487),
+                height: panelHeight * 0.087,
               },
             ]}
-            pointerEvents="none"
           >
-            {skipped ? (
-              <Text
-                maxFontSizeMultiplier={1.15}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                style={[styles.stat, { fontSize: statSize }]}
-              >
-                Level unlocked
-              </Text>
-            ) : (
-              <Text
-                maxFontSizeMultiplier={1.15}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                style={[styles.stat, { fontSize: statSize }]}
-              >
-                {moveCount} {moveCount === 1 ? "move" : "moves"}
-                {parMoves !== undefined ? ` · par ${parMoves}` : ""}
-              </Text>
-            )}
-
-            {perfect ? (
-              <Text
-                maxFontSizeMultiplier={1.15}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                style={[styles.perfect, { fontSize: statSize * 1.05 }]}
-              >
-                Perfect solve ⭐
-              </Text>
-            ) : (
-              <Text
-                maxFontSizeMultiplier={1.15}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                style={[styles.reward, { fontSize: statSize }]}
-              >
-                {coinsAwarded > 0
-                  ? `+${coinsAwarded} 🪙`
-                  : skipped
-                  ? "No coins for a skip"
-                  : "Replay — no coins again"}
-              </Text>
-            )}
+            <Image
+              source={COIN}
+              style={{ width: panelWidth * 0.088, height: panelWidth * 0.088 }}
+              accessible={false}
+            />
+            <Text
+              style={[styles.reward, { fontSize: panelWidth * 0.059 }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {reward}
+            </Text>
           </View>
-
-          <View style={[styles.buttons, { top: BUTTONS_TOP * h, gap }]}>
+          <View
+            style={[
+              styles.buttons,
+              { bottom: panelHeight * (hasNextLevel ? 0.061 : 0.12), gap },
+            ]}
+          >
             {hasNextLevel ? (
               <ArtButton
                 art={BUTTON_ART.next}
@@ -314,16 +302,51 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 20,
   },
-  slot: {
+  starSlot: {
     position: "absolute",
+    left: 0,
+    right: 0,
     alignItems: "center",
     justifyContent: "center",
-    // Keeps both lines off the slot's rounded edges.
-    paddingVertical: 6,
   },
-  stat: { color: "#FFFFFF", fontWeight: "700" },
-  perfect: { color: "#FFD84D", fontWeight: "900", marginTop: 5 },
-  reward: { color: "#FFD84D", fontWeight: "800", marginTop: 5 },
-  buttons: { position: "absolute", left: 0, right: 0, alignItems: "center" },
+  statSlot: {
+    position: "absolute",
+    left: "21%",
+    right: "21%",
+    paddingHorizontal: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#082655",
+    borderColor: "#3a9cec",
+    borderWidth: 1.5,
+    borderRadius: 30,
+  },
+  stat: { color: "#e8f6ff", fontWeight: "700", textAlign: "center" },
+  rewardSlot: {
+    position: "absolute",
+    left: "15%",
+    right: "15%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingHorizontal: 8,
+    backgroundColor: "#062449",
+    borderColor: "#ffe599",
+    borderWidth: 1.5,
+    borderRadius: 30,
+  },
+  reward: {
+    flexShrink: 1,
+    fontFamily: GameTypography.display,
+    color: "#ffe157",
+    textAlign: "center",
+  },
+  buttons: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
   pressed: { transform: [{ scale: 0.96 }] },
 });

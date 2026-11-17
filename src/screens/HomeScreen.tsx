@@ -181,6 +181,7 @@ export function HomeScreen({ navigation }: Props) {
         visible={coinInfo}
         balance={coins}
         onDismiss={() => setCoinInfo(false)}
+        onBuyCoins={() => navigation.navigate("BuyCoins")}
         onAds={() => {
           setCoinInfo(false);
           navigation.navigate("AdBenefits");

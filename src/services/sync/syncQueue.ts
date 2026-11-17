@@ -1,3 +1,4 @@
+import { encodeLevelStarMarks, mergeLevelStars } from "../levels/ratings";
 import { reportIssue } from "../diagnostics/client";
 import { monetization } from "../ads/policy";
 import { inventory } from "../shop/policy";
@@ -98,6 +99,9 @@ export function flush(): void {
   const syncVersion = storage.getNumber(StorageKeys.syncVersion);
   const completedLevels = getJSON<number[]>(StorageKeys.completedLevels, []);
   const dailyReward = parseDailyRecord(getJSON(StorageKeys.dailyReward, null));
+  const starMarks = encodeLevelStarMarks(
+    mergeLevelStars(getJSON(StorageKeys.levelStars, null))
+  );
   const currentLevel = storage.getNumber(StorageKeys.currentLevel) ?? 1;
 
   // NOT awaited, by design (DECISIONS.md D-004). Firestore's offline
@@ -119,6 +123,7 @@ export function flush(): void {
         getJSON(StorageKeys.skinSlots, undefined)
       ),
       completedLevels,
+      ...(Object.keys(starMarks).length ? { levelStarMarks: starMarks } : {}),
       currentLevel,
       ...(dailyReward ? { dailyReward } : {}),
       awardsProgress: awardsProgress(

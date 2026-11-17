@@ -30,7 +30,7 @@ export const COIN_REWARDS = {
 export const COIN_COSTS = {
   hint: 30,
   undo: 20,
-  reset: 0,
+  reset: 50,
   skip: 100,
 } as const;
 

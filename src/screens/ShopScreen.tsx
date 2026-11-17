@@ -23,6 +23,7 @@ import { usePlayerStore } from "../state/playerStore";
 import {
   SKINS,
   type SkinId,
+  type ShopSkin,
   type SkinColour,
   type AppearanceSlot,
 } from "../services/shop/policy";
@@ -36,7 +37,9 @@ import {
 import { coinHistory, openingHistory } from "../services/coins/history";
 import { GameTypography } from "../theme/typography";
 import { play } from "../services/audio/audioService";
-const RED_RACER = SKINS.find((skin) => skin.id === "red_racer")!;
+const SHOP_SKINS = SKINS.filter(
+  (skin): skin is ShopSkin => skin.id !== "default"
+);
 type Mode = "Shop" | "Inventory" | "Coin History";
 export function ShopScreen({
   navigation,
@@ -51,12 +54,11 @@ export function ShopScreen({
   const [mode, setMode] = useState<Mode>("Shop");
   const [category, setCategory] = useState<ShopCategory>("car");
   const [preview, setPreview] = useState<number | null>(null);
-  const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [purchaseSkin, setPurchaseSkin] = useState<ShopSkin | null>(null);
   const [purchaseError, setPurchaseError] = useState("");
   const [message, setMessage] = useState("");
-  const coins = usePlayerStore((s) => s.coins),
-    owned = usePlayerStore((s) => s.unlockedSkins),
-    selected = usePlayerStore((s) => s.selectedSkin);
+  const coins = usePlayerStore((s) => s.coins);
+  const owned = usePlayerStore((s) => s.unlockedSkins);
   const buy = usePlayerStore((s) => s.buySkin),
     equip = usePlayerStore((s) => s.equipSkin);
   const panelWidth = Math.min(width - 16, 600),
@@ -84,27 +86,28 @@ export function ShopScreen({
         equip(id, category, colour)
           ? id === "default"
             ? `Default ${colour} ${category} equipped!`
-            : "Red Racer equipped for red cars!"
+            : `${SHOP_SKINS.find((skin) => skin.id === id)?.title} equipped!`
           : "Finish restoring your account first."
       );
     } catch {
       setMessage("Could not save the selection. Please try again.");
     }
   };
-  const purchase = () => {
+  const purchase = (skin: ShopSkin) => {
     setPurchaseError("");
-    setPurchaseOpen(true);
+    setPurchaseSkin(skin);
   };
   const confirmPurchase = () => {
+    if (!purchaseSkin) return;
     try {
-      const result = buy(RED_RACER.id);
+      const result = buy(purchaseSkin.id);
       if (result === "purchased") {
         play("coin");
-        setPurchaseOpen(false);
+        setPurchaseSkin(null);
         setMode("Inventory");
-        setMessage("Red Racer is yours! Equip it for red cars below.");
+        setMessage(`${purchaseSkin.title} is yours! Equip it in Inventory.`);
       } else if (result === "owned") {
-        setPurchaseOpen(false);
+        setPurchaseSkin(null);
         setMode("Inventory");
       } else
         setPurchaseError(
@@ -119,8 +122,14 @@ export function ShopScreen({
     }
   };
   const history = mode === "Coin History" ? [...coinHistory()].reverse() : [];
-  const showRacer =
-    category === "car" && (mode === "Shop" || owned.includes("red_racer"));
+  const categoryTitle = CATEGORIES.find(
+    (entry) => entry.id === category
+  )!.title;
+  const visibleSkins = SHOP_SKINS.filter(
+    (skin) =>
+      skin.replacements[0].type === category &&
+      (mode === "Shop" || owned.includes(skin.id))
+  );
   return (
     <View style={styles.root}>
       <Image
@@ -333,90 +342,80 @@ export function ShopScreen({
                 </View>
               </>
             ) : null}
-            {showRacer ? (
+            {visibleSkins.length ? (
               <View style={styles.premiumSection}>
                 <Text style={styles.sectionTitle}>
-                  {mode === "Inventory" ? "Your purchased cars" : "Car skins"}
+                  {mode === "Inventory"
+                    ? "Your purchased skins"
+                    : `${categoryTitle} · Skins`}
                 </Text>
-                <View
-                  style={[
-                    styles.racerCard,
-                    mode === "Inventory" &&
-                      selected === "red_racer" &&
-                      styles.racerEquipped,
-                  ]}
-                >
-                  <Image
-                    source={skinAssets.red_racer}
-                    resizeMode="contain"
-                    style={styles.racerArt}
-                    accessible
-                    accessibilityLabel="Red Racer sports coupe preview"
-                  />
-                  <View style={styles.racerCopy}>
-                    <Text style={styles.racerTitle}>Red Racer</Text>
-                    <Text style={styles.racerDescription}>
-                      Golden stripes. A sporty new look for red compact cars.
-                    </Text>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        mode === "Shop" && owned.includes("red_racer")
-                          ? "Red Racer owned"
-                          : selected === "red_racer"
-                          ? "Red Racer equipped"
-                          : owned.includes("red_racer")
-                          ? "Equip Red Racer"
-                          : `Buy Red Racer for ${RED_RACER.price} coins`
-                      }
-                      disabled={
-                        mode === "Shop"
-                          ? owned.includes("red_racer")
-                          : selected === "red_racer"
-                      }
-                      onPress={() =>
-                        owned.includes("red_racer")
-                          ? equipItem("red_racer")
-                          : purchase()
-                      }
-                      style={({ pressed }) => [
-                        styles.buyButton,
-                        mode === "Inventory" &&
-                          selected === "red_racer" &&
-                          styles.equippedButton,
-                        pressed && styles.pressed,
+                {visibleSkins.map((skin) => {
+                  const { colour, type } = skin.replacements[0];
+                  const equipped =
+                    equippedSkins[`${type}:${colour}`] === skin.id;
+                  const purchased = owned.includes(skin.id);
+                  const isShop = mode === "Shop";
+                  return (
+                    <View
+                      key={skin.id}
+                      style={[
+                        styles.racerCard,
+                        !isShop && equipped && styles.racerEquipped,
                       ]}
                     >
-                      {!owned.includes("red_racer") ? (
-                        <Image
-                          source={require("../../assets/ui/icons/coin.webp")}
-                          style={styles.smallCoin}
-                          accessible={false}
-                        />
-                      ) : null}
-                      <Text style={styles.buyText}>
-                        {mode === "Shop" && owned.includes("red_racer")
-                          ? "Owned"
-                          : selected === "red_racer"
-                          ? "Equipped"
-                          : owned.includes("red_racer")
-                          ? "Equip"
-                          : RED_RACER.price}
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-            ) : null}
-            {mode === "Shop" && !showRacer ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.sectionTitle}>
-                  No {category === "truck" ? "truck" : "bus"} skins for sale yet
-                </Text>
-                <Text style={styles.note}>
-                  Your free vehicles are in Inventory. New cosmetics will appear
-                  here when available.
-                </Text>
+                      <Image
+                        source={skinAssets[skin.id]}
+                        resizeMode="contain"
+                        style={styles.racerArt}
+                        accessible={false}
+                      />
+                      <View style={styles.racerCopy}>
+                        <Text style={styles.racerTitle}>{skin.title}</Text>
+                        <Text style={styles.racerDescription}>
+                          {skin.description}
+                        </Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            isShop
+                              ? purchased
+                                ? `${skin.title} owned`
+                                : `Buy ${skin.title} for ${skin.price} coins`
+                              : equipped
+                              ? `${skin.title} equipped`
+                              : `Equip ${skin.title}`
+                          }
+                          disabled={isShop ? purchased : equipped}
+                          onPress={() =>
+                            isShop ? purchase(skin) : equipItem(skin.id, colour)
+                          }
+                          style={({ pressed }) => [
+                            styles.buyButton,
+                            !isShop && equipped && styles.equippedButton,
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          {!purchased ? (
+                            <Image
+                              source={require("../../assets/ui/icons/coin.webp")}
+                              style={styles.smallCoin}
+                              accessible={false}
+                            />
+                          ) : null}
+                          <Text style={styles.buyText}>
+                            {isShop
+                              ? purchased
+                                ? "Owned"
+                                : skin.price
+                              : equipped
+                              ? "Equipped"
+                              : "Equip"}
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             ) : null}
             <Text style={styles.footer}>
@@ -427,17 +426,19 @@ export function ShopScreen({
           </View>
         </ScrollView>
       )}
-      <PurchasePopup
-        visible={purchaseOpen}
-        title={RED_RACER.title}
-        price={RED_RACER.price}
-        balance={coins}
-        source={skinAssets.red_racer}
-        description="Replaces red compact cars only. Other colours and vehicle types stay unchanged. Equip it after purchase."
-        error={purchaseError}
-        onClose={() => setPurchaseOpen(false)}
-        onBuy={confirmPurchase}
-      />
+      {purchaseSkin ? (
+        <PurchasePopup
+          visible
+          title={purchaseSkin.title}
+          price={purchaseSkin.price}
+          balance={coins}
+          source={skinAssets[purchaseSkin.id]}
+          description={`${purchaseSkin.description} Equip it after purchase.`}
+          error={purchaseError}
+          onClose={() => setPurchaseSkin(null)}
+          onBuy={confirmPurchase}
+        />
+      ) : null}
       <Modal
         visible={preview !== null}
         transparent
@@ -631,7 +632,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 9,
   },
-  premiumSection: { marginBottom: 2 },
+  note: { color: "#cfdef1", fontSize: 12, lineHeight: 18 },
+  premiumSection: { marginBottom: 2, gap: 10 },
   racerCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -727,7 +729,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 13,
   },
-  emptyState: { paddingVertical: 24, alignItems: "center", gap: 12 },
   historyList: { padding: 16, gap: 12 },
   historyTitle: {
     fontFamily: GameTypography.display,
@@ -735,7 +736,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     marginBottom: 12,
   },
-  note: { color: "#cfdef1", fontSize: 12, lineHeight: 18 },
   historyCard: {
     backgroundColor: "#183657",
     borderWidth: 1,

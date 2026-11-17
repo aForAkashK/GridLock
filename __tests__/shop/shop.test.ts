@@ -252,3 +252,26 @@ it("drops invalid, mismatched and unowned slot overrides", () => {
     "car:red": "red_racer",
   });
 });
+
+it("keeps purchased car, truck and bus skins in separate slots", () => {
+  mockValues.set("coins", 1200);
+  expect(buySkin("blue_racer")).toBe("purchased");
+  expect(buySkin("blue_hauler")).toBe("purchased");
+  expect(buySkin("blue_express")).toBe("purchased");
+  expect(equipSkin("blue_express", "truck", "blue")).toBe(false);
+  expect(equipSkin("blue_racer", "car", "blue")).toBe(true);
+  expect(equipSkin("blue_hauler", "truck", "blue")).toBe(true);
+  expect(equipSkin("blue_express", "bus", "blue")).toBe(true);
+  expect(readInventory().slots).toEqual({
+    "car:blue": "blue_racer",
+    "truck:blue": "blue_hauler",
+    "bus:blue": "blue_express",
+  });
+  expect(equipSkin("default", "bus", "blue")).toBe(true);
+  expect(readInventory().slots).toEqual({
+    "car:blue": "blue_racer",
+    "truck:blue": "blue_hauler",
+  });
+  expect(coinService.getBalance()).toBe(50);
+  expect(coinHistory().map((entry) => entry.amount)).toEqual([-300, -400, -450]);
+});

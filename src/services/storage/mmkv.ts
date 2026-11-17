@@ -21,9 +21,11 @@ export const StorageKeys = {
   levelAdBreaks: "player.levelAdBreaks.v1", // device-local pacing, not cloud currency
   coinHistory: "player.coinHistory.v1",
   coinTransaction: "player.coinTransaction.pending.v1",
+  playPurchaseReceipts: "player.playPurchaseReceipts.v1",
   /** Monotonic counter used to resolve local-vs-cloud conflicts on launch. */
   syncVersion: "player.syncVersion",
   currentLevel: "player.currentLevel",
+  levelStars: "player.levelStars.v1",
   completedLevels: "player.completedLevels",
   premium: "player.premium",
   unlockedSkins: "player.unlockedSkins",

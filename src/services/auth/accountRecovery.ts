@@ -1,3 +1,4 @@
+import type { LevelStars } from "../levels/ratings";
 import { breadcrumb, reportIssue } from "../diagnostics/client";
 import { setSaveReady } from "./saveReadiness";
 import { readMonetization } from "../ads/rewardService";
@@ -110,6 +111,7 @@ export async function finishPendingRecovery(): Promise<void> {
       coins: getNumber(StorageKeys.coins, STARTING_COINS),
       syncVersion: getNumber(StorageKeys.syncVersion, 0),
       completedLevels: getJSON<number[]>(StorageKeys.completedLevels, []),
+      levelStars: getJSON<LevelStars>(StorageKeys.levelStars, {}),
       currentLevel: getNumber(StorageKeys.currentLevel, 1),
     };
     const merged = recoveredPlayer(
@@ -127,6 +129,7 @@ export async function finishPendingRecovery(): Promise<void> {
     storage.set(StorageKeys.coins, merged.coins);
     storage.set(StorageKeys.syncVersion, merged.syncVersion);
     setJSON(StorageKeys.completedLevels, merged.completedLevels);
+    setJSON(StorageKeys.levelStars, merged.levelStars ?? {});
     storage.set(StorageKeys.currentLevel, merged.currentLevel);
     if (merged.dailyReward) {
       setJSON(StorageKeys.dailyReward, merged.dailyReward);

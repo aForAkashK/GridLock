@@ -27,7 +27,7 @@ Freeway Escape is a traffic puzzle game where every vehicle has a path to freedo
 Start with compact 6x6 boards, then take on larger 7x7 and 8x8 layouts. The first 50 levels are available from the start; completing them opens the next 50. All 100 campaign levels are included for offline play.
 
 THINK AHEAD, THEN MAKE YOUR MOVE
-Study the traffic, plan an exit and test your solution. Use a hint or undo when you need a hand, or restart a puzzle for free.
+Study the traffic, plan an exit and test your solution. Use game coins for hints, undo or an in-level restart. Replay completed levels to improve your star rating.
 
 MAKE EVERY RETURN COUNT
 Collect daily coin gifts, build your streak and earn one-time achievement rewards. Spend game coins on helpful actions, vehicle cosmetics and ad-free passes. View owned skins in Inventory and recent coin activity in Coin History.

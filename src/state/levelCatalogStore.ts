@@ -1,19 +1,21 @@
 /** Reactive catalog. Contains no per-frame values and never fetches on a tap. */
-import { create } from 'zustand';
-import { LEVELS } from '../game/levels';
-import type { Level } from '../game/models/Level';
-import type { LevelCatalog } from '../services/levels/catalog';
-import { readCachedCatalog } from '../services/levels/catalogRepository';
+import { create } from "zustand";
+import { LEVELS } from "../game/levels";
+import type { Level } from "../game/models/Level";
+import type { LevelCatalog } from "../services/levels/catalog";
 
-export const initialCatalog = readCachedCatalog();
 export const useLevelCatalogStore = create<{ levels: Level[] }>(() => ({
-  levels: [...LEVELS, ...(initialCatalog?.levels ?? [])],
+  levels: LEVELS,
 }));
 
 export function installCatalog(catalog: LevelCatalog): void {
+  appendLevels(catalog.levels);
+}
+
+export function appendLevels(levels: Level[]): void {
   const previous = useLevelCatalogStore.getState().levels;
-  const additions = catalog.levels.filter(
-    (level) => level.id > previous[previous.length - 1].id,
+  const additions = levels.filter(
+    (level) => level.id > previous[previous.length - 1].id
   );
   if (additions.length > 0) {
     // Preserve existing Level object identities so an in-progress board cannot
@@ -24,7 +26,7 @@ export function installCatalog(catalog: LevelCatalog): void {
 
 export function followingLevelId(
   levels: Level[],
-  id: number,
+  id: number
 ): number | undefined {
   const index = levels.findIndex((level) => level.id === id);
   return index >= 0 ? levels[index + 1]?.id : undefined;

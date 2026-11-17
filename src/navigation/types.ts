@@ -7,4 +7,5 @@ export type RootStackParamList = {
   DailyRewards: undefined;
   Awards: undefined;
   AdBenefits: undefined;
+  BuyCoins: undefined;
 };

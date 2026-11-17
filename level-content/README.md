@@ -1,4 +1,10 @@
-# Automatic level delivery
+# Legacy hosted level catalogs
+
+The current app automatically builds 8×8 chapters after level 100 from the
+bundled V1 seed table. Players need one app update for this feature. No
+Firebase publication is required for subsequent 20-level chapters. The
+current app reserves IDs 101–2000 for this recipe and no longer checks the
+v2 feed. The legacy hosting workflow below describes the older app only.
 
 Players install the app update containing this feature once. After that,
 compatible level releases arrive as JSON, without rebuilding the mobile app.

@@ -23,9 +23,9 @@ import {
 } from "@react-navigation/native";
 import type { RootStackParamList } from "./src/navigation/types";
 import {
-  startLevelDelivery,
-  setLevelDeliveryGameVisible,
-} from "./src/services/levels/levelDeliveryRuntime";
+  startEndlessLevels,
+  setEndlessGameVisible,
+} from "./src/services/levels/endlessRuntime";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 import { bootstrap } from "./src/services/bootstrap";
 import { Colors } from "./src/theme/tokens";
@@ -37,10 +37,11 @@ import {
 import { AccountDeletionGate } from "./src/components/AccountDeletionGate";
 import { useAccountStore } from "./src/state/accountStore";
 import { AccountRecoveryGate } from "./src/components/AccountRecoveryGate";
+import { startPlayCoinRecovery } from "./src/services/purchases/playCoinPurchases";
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 let qaLaunched = false;
-const updateDeliveryRoute = () => {
+const updateGameRoute = () => {
   const route = navigationRef.getCurrentRoute();
   diagnosticContext({
     screen: route?.name ?? "starting",
@@ -49,7 +50,7 @@ const updateDeliveryRoute = () => {
       Boolean((route.params as { preview?: boolean } | undefined)?.preview),
   });
   breadcrumb("navigation", { screen: route?.name });
-  setLevelDeliveryGameVisible(route?.name === "Game");
+  setEndlessGameVisible(route?.name === "Game");
   if (!qaLaunched && NativeModules.GridLockFeedback?.qaEnabled === true) {
     qaLaunched = true;
     NativeModules.GridLockFeedback.initialPreview().then((levelId: number) => {
@@ -88,6 +89,7 @@ function App() {
 
   useEffect(() => {
     const stopDiagnostics = startDiagnostics();
+    const stopPurchaseRecovery = startPlayCoinRecovery();
     // Deliberately not awaited and not gating render: sign-in and the cloud
     // merge run alongside the first frame. The game works entirely from local
     // state, so a slow or absent network costs nothing but a later merge.
@@ -97,12 +99,13 @@ function App() {
     );
     const stopAudio = startAudio();
     const stopAds = startAds();
-    const stopDelivery = startLevelDelivery();
+    const stopEndless = startEndlessLevels();
     return () => {
       stopDiagnostics();
+      stopPurchaseRecovery();
       stopAds();
       stopAudio();
-      stopDelivery();
+      stopEndless();
     };
   }, []);
 
@@ -113,10 +116,10 @@ function App() {
           <StatusBar barStyle="light-content" />
           <NavigationContainer
             ref={navigationRef}
-            onReady={updateDeliveryRoute}
+            onReady={updateGameRoute}
             onStateChange={() => {
               play("tap");
-              updateDeliveryRoute();
+              updateGameRoute();
             }}
             theme={navTheme}
           >

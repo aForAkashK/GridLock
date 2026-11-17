@@ -128,11 +128,9 @@ or if the device was offline at backgrounding, since deleting the app destroys
 Firestore's pending-write queue too. Both windows are narrow. No
 client-authoritative design eliminates them.
 
-**Known limit.** This trusts the client. Acceptable while coins are only earned
-through play. **Before coins are ever sold for money**, a server-side
-append-only ledger with receipt validation is required — `CoinService` is an
-interface (`src/services/coins/types.ts`) specifically so that swap does not
-touch gameplay code.
+**Known limit.** This trusts the client. A server-side append-only ledger is
+the path to cross-device settlement and stronger tamper protection. The
+Android coin packs use the client-only scope in D-034.
 
 ---
 
@@ -452,3 +450,15 @@ Add @react-native-firebase/crashlytics26.4.0, matching the installed Firebase mo
 Android release uploads R8/native symbols; QA/performance skip those uploads for local build speed. iOS installs the native pod/run script and emits release dSYMs. Native initialization and extra library bytes are an accepted measured cost for production crash investigation; mappings/source maps remain outside runtime assets. Exact binaries/maps are archived by SHA-256 to ignored private release storage. A Gradle ZIP task preserves native symbols before the uploader removes its intermediates. See release/DIAGNOSTICS.md for console setup, limitations, privacy/deletion and triage.
 
 Installed RNFB26.4 source persisted collection settings without applying them to the current native SDK, and its fatal JS handler used the initial immutable native enabled flag. A small idempotent, version-checked postinstall script applies current-session native settings/clears the user label when disabled and reads the current JS preference for fatal handling. It fails closed on incompatible upstream source/version; review it on upgrades. This avoids a restart-dependent privacy toggle and missing first-session JS reports. No new patching dependency is added. Preserve the original React Native fatal handler chain: controlled testing found the SDK direct-exit path could exit before its queued JS report was persisted. Correlate related JS/native events rather than hiding the native fatal handoff.
+
+## D-033 — Automatic offline chapters after level 100 (2026-11-17)
+
+The current app builds levels 101–2000 in groups of 20 from a bundled, versioned seed table. Contiguous completion through level 99, 119, 139 and the corresponding later boundaries schedules the next group. The group becomes visible after the previous group is complete. Every generated board uses the existing 8×8 layout, and every ID retains the same puzzle across devices and reinstalls. The 100 original boards are unchanged.
+
+The authoring tool validates geometry, exact par, distinct layouts and a conservative sampled hint budget for all seed records. Gameplay expands one group per idle callback and pauses expansion during active puzzles or in the background. It needs no network request, cache or new backend. Keep the seed table and its board recipe stable for existing IDs. The 2,000-level ceiling matches the current cloud save contract. The current build stops polling the v2 level feed, which was empty when IDs 101 onward were assigned.
+
+## D-034 — Google Play Billing for coin packs (2026-11-17)
+
+Android uses Play Billing 8.3.0 for the four one-time consumable coin packs. The publisher chose direct client checkout. The app verifies Play's purchase signature with the app's public licensing key, binds the receipt to the current save, and journals an idempotent local coin credit before consuming the purchase. It retries unconsumed receipts when the save is ready, the app resumes, or the storefront opens. The existing cloud save sync receives the updated balance. Play connections run outside gameplay and no new server or billing account is needed.
+
+The checkout gate opens only when the app's Play licensing public key is configured in `android/play-licensing-public-key.txt`. The local ledger protects against duplicate delivery and interrupted writes on the same install. A modified client can bypass local checks, and recovery after reinstall relies on a synced, recoverable save for already-consumed packs. The mobile client cannot guarantee global exactly-once delivery across devices or automatically revoke refunded coin credit.

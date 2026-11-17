@@ -1,3 +1,8 @@
+import {
+  readLevelStars,
+  saveLevelResult,
+} from "../services/levels/levelResults";
+import type { LevelStars } from "../services/levels/ratings";
 import { monetization, type Monetization } from "../services/ads/policy";
 import type {
   EquipmentCategory,
@@ -25,7 +30,6 @@ import {
 import {
   readAwardsProgress,
   captureDailyStreak,
-  recordPerfectSolve,
 } from "../services/awards/storage";
 import type { Level } from "../game/models/Level";
 import type { GameState } from "../game/models/GameState";
@@ -41,7 +45,6 @@ import {
   type DailyRecord,
 } from "../services/rewards/dailyPolicy";
 import type { CoinReason } from "../services/coins/types";
-import { queueSync } from "../services/sync/syncQueue";
 import {
   storage,
   StorageKeys,
@@ -56,7 +59,12 @@ type PlayerState = {
   monetization: Monetization;
   awards: AwardsProgress;
   claimAward: (id: string) => AwardClaimResult;
-  recordAwardResult: (level: Level, state: GameState, skipped: boolean) => void;
+  saveLevelResult: (
+    level: Level,
+    state: GameState,
+    skipped: boolean
+  ) => number | null;
+  levelStars: LevelStars;
   currentLevel: number;
   completedLevels: number[];
   premium: boolean;
@@ -75,7 +83,6 @@ type PlayerState = {
   earn: (amount: number, reason: CoinReason) => void;
   /** False when unaffordable — callers must check before granting the item. */
   spend: (amount: number, reason: CoinReason) => boolean;
-  completeLevel: (levelId: number) => void;
   setPremium: (value: boolean) => void;
   /** Re-reads MMKV after a launch merge overwrites it from the cloud. */
   hydrateFromStorage: () => void;
@@ -96,8 +103,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ coins: coinService.getBalance(), awards: readAwardsProgress() });
     return result;
   },
-  recordAwardResult: (level, state, skipped) => {
-    set({ awards: recordPerfectSolve(level, state, skipped) });
+  saveLevelResult: (level, state, skipped) => {
+    const amount = saveLevelResult(level, state, skipped);
+    if (amount === null) return null;
+    set({
+      coins: coinService.getBalance(),
+      completedLevels: getJSON<number[]>(StorageKeys.completedLevels, []),
+      currentLevel: getNumber(StorageKeys.currentLevel, 1),
+      levelStars: readLevelStars(),
+      awards: readAwardsProgress(),
+    });
+    return amount;
   },
   dailyReward: parseDailyRecord(getJSON(StorageKeys.dailyReward, null)),
   claimDaily: (now) => {
@@ -116,6 +132,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
   currentLevel: getNumber(StorageKeys.currentLevel, 1),
   completedLevels: getJSON<number[]>(StorageKeys.completedLevels, []),
+  levelStars: readLevelStars(),
   premium: getBool(StorageKeys.premium, false),
   unlockedSkins: readInventory().owned,
   selectedSkin: readInventory().selected,
@@ -152,21 +169,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     return true;
   },
 
-  completeLevel: (levelId) => {
-    const completed = get().completedLevels;
-    if (completed.includes(levelId)) {
-      return;
-    }
-    const next = [...completed, levelId];
-    setJSON(StorageKeys.completedLevels, next);
-    const nextLevel = Math.max(get().currentLevel, levelId + 1);
-    storage.set(StorageKeys.currentLevel, nextLevel);
-    set({ completedLevels: next, currentLevel: nextLevel });
-    // Progress is cloud-synced like coins. Fire-and-forget: the queue batches
-    // this with the level's coin reward into one write.
-    queueSync("progress");
-  },
-
   setPremium: (value) => {
     storage.set(StorageKeys.premium, value);
     set({ premium: value });
@@ -194,6 +196,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       dailyReward: parseDailyRecord(getJSON(StorageKeys.dailyReward, null)),
       currentLevel: getNumber(StorageKeys.currentLevel, 1),
       completedLevels: getJSON<number[]>(StorageKeys.completedLevels, []),
+      levelStars: readLevelStars(),
       premium: getBool(StorageKeys.premium, false),
     });
   },

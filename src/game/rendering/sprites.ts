@@ -1,3 +1,4 @@
+import { skinAssets } from "../../services/shop/assets";
 import { reportIssue } from "../../services/diagnostics/client";
 import {
   replacementSprite,
@@ -36,7 +37,7 @@ const COLOURED_TYPES = ["car", "truck", "bus"] as const;
 const PALETTE = ["red", "blue", "yellow", "green", "purple", "orange"];
 
 export type SpriteKey =
-  | "red_racer"
+  | keyof typeof skinAssets
   | "car_red"
   | "car_blue"
   | "car_yellow"
@@ -60,7 +61,7 @@ export type SpriteKey =
   | "ambulance";
 
 const SPRITES: Record<SpriteKey, number> = {
-  red_racer: require("../../../assets/game/vehicles/skins/red_racer.webp"),
+  ...skinAssets,
   car_red: require("../../../assets/game/vehicles/car/car_red.webp"),
   car_blue: require("../../../assets/game/vehicles/car/car_blue.webp"),
   car_yellow: require("../../../assets/game/vehicles/car/car_yellow.webp"),
@@ -134,11 +135,27 @@ export function spriteDiagnostics() {
   };
 }
 const decoded = new Map<SpriteKey, SkImage>();
+// Skins expand the registry without expanding the retained decoded cache.
+const CACHE_BYTES = 12.25 * 1024 ** 2;
+let decodedBytes = 0;
+const imageBytes = (image: SkImage) => image.width() * image.height() * 4;
+function rememberSprite(key: SpriteKey, image: SkImage): void {
+  decoded.set(key, image);
+  decodedBytes += imageBytes(image);
+  while (decodedBytes > CACHE_BYTES) {
+    const oldest = decoded.entries().next().value;
+    if (!oldest) break;
+    decoded.delete(oldest[0]);
+    decodedBytes -= imageBytes(oldest[1]);
+  }
+}
 const loading = new Map<SpriteKey, Promise<SkImage>>();
 
 function loadSprite(key: SpriteKey): Promise<SkImage> {
   const cached = decoded.get(key);
   if (cached) {
+    decoded.delete(key);
+    decoded.set(key, cached);
     return Promise.resolve(cached);
   }
   const existing = loading.get(key);
@@ -155,7 +172,7 @@ function loadSprite(key: SpriteKey): Promise<SkImage> {
       if (!result) {
         throw new Error(`Cannot decode ${key}`);
       }
-      decoded.set(key, result);
+      rememberSprite(key, result);
       return result;
     })
     .finally(() => {
@@ -208,7 +225,7 @@ export function useVehicleImages(
         }
       })
       .catch((error) => {
-      reportIssue("assets.decode", error);
+        reportIssue("assets.decode", error);
         failures.push(String(error));
         if (__DEV__) {
           console.warn("[sprites]", String(error));

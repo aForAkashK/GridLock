@@ -1,0 +1,154 @@
+{
+  "tool": "built-in imagegen",
+  "exports": [
+    {
+      "id": "blue_racer",
+      "reference": "assets/game/vehicles/skins/red_racer.webp",
+      "prompt": "Use case: stylized-concept. Asset type: alternate in-game vehicle sprite. Subject: saturated cobalt blue sports car with two narrow icy-white racing stripes. Use the reference as the exact footprint, overhead camera, and orientation guide: keep the single vehicle straight vertical, front bumper and headlights at the BOTTOM, and preserve its length-to-width ratio, silhouette and window placement. Glossy toy-like game art, strong dark outline, clean saturated color, top-left light. Center the complete object with a small clear margin on genuinely transparent background. No floor, cast shadow, glow, lettering, logo, border, watermark, or other objects.",
+      "master": ".local-artifacts/garage-2026-11-11/blue_racer.png",
+      "output": "assets/game/vehicles/skins/blue_racer.webp",
+      "cwebpOptions": [
+        "-q",
+        "90",
+        "-alpha_q",
+        "100",
+        "-m",
+        "6",
+        "-resize",
+        "0",
+        "512"
+      ]
+    },
+    {
+      "id": "green_racer",
+      "reference": "assets/game/vehicles/skins/red_racer.webp",
+      "prompt": "Use case: stylized-concept. Asset type: alternate in-game vehicle sprite. Subject: vivid lime green sports car with two black racing stripes edged in silver. Use the reference as the exact footprint, overhead camera, and orientation guide: keep the single vehicle straight vertical, front bumper and headlights at the BOTTOM, and preserve its length-to-width ratio, silhouette and window placement. Glossy toy-like game art, strong dark outline, clean saturated color, top-left light. Center the complete object with a small clear margin on genuinely transparent background. No floor, cast shadow, glow, lettering, logo, border, watermark, or other objects.",
+      "master": ".local-artifacts/garage-2026-11-11/green_racer.png",
+      "output": "assets/game/vehicles/skins/green_racer.webp",
+      "cwebpOptions": [
+        "-q",
+        "90",
+        "-alpha_q",
+        "100",
+        "-m",
+        "6",
+        "-resize",
+        "0",
+        "512"
+      ]
+    },
+    {
+      "id": "yellow_racer",
+      "reference": "assets/game/vehicles/skins/red_racer.webp",
+      "prompt": "Use case: stylized-concept. Asset type: alternate in-game vehicle sprite. Subject: sunflower yellow sports car with two dark graphite racing stripes. Use the reference as the exact footprint, overhead camera, and orientation guide: keep the single vehicle straight vertical, front bumper and headlights at the BOTTOM, and preserve its length-to-width ratio, silhouette and window placement. Glossy toy-like game art, strong dark outline, clean saturated color, top-left light. Center the complete object with a small clear margin on genuinely transparent background. No floor, cast shadow, glow, lettering, logo, border, watermark, or other objects.",
+      "master": ".local-artifacts/garage-2026-11-11/yellow_racer.png",
+      "output": "assets/game/vehicles/skins/yellow_racer.webp",
+      "cwebpOptions": [
+        "-q",
+        "90",
+        "-alpha_q",
+        "100",
+        "-m",
+        "6",
+        "-resize",
+        "0",
+        "512"
+      ]
+    },
+    {
+      "id": "blue_hauler",
+      "reference": "assets/game/vehicles/truck/truck_blue.webp",
+      "prompt": "Use case: stylized-concept. Asset type: alternate in-game vehicle sprite. Subject: bright cobalt cargo truck with sporty white roof stripes and tidy silver ribbed cargo roof. Use the reference as the exact footprint, overhead camera, and orientation guide: keep the single vehicle straight vertical, front bumper and headlights at the BOTTOM, and preserve its length-to-width ratio, silhouette and window placement. Glossy toy-like game art, strong dark outline, clean saturated color, top-left light. Center the complete object with a small clear margin on genuinely transparent background. No floor, cast shadow, glow, lettering, logo, border, watermark, or other objects.",
+      "master": ".local-artifacts/garage-2026-11-11/blue_hauler.png",
+      "output": "assets/game/vehicles/skins/blue_hauler.webp",
+      "cwebpOptions": [
+        "-q",
+        "90",
+        "-alpha_q",
+        "100",
+        "-m",
+        "6",
+        "-resize",
+        "0",
+        "512"
+      ]
+    },
+    {
+      "id": "green_hauler",
+      "reference": "assets/game/vehicles/truck/truck_blue.webp",
+      "prompt": "Use case: stylized-concept. Asset type: alternate in-game vehicle sprite. Subject: emerald green cargo truck with cream stripes, silver bumper and ribbed green cargo roof. Use the reference as the exact footprint, overhead camera, and orientation guide: keep the single vehicle straight vertical, front bumper and headlights at the BOTTOM, and preserve its length-to-width ratio, silhouette and window placement. Glossy toy-like game art, strong dark outline, clean saturated color, top-left light. Center the complete object with a small clear margin on genuinely transparent background. No floor, cast shadow, glow, lettering, logo, border, watermark, or other objects.",
+      "master": ".local-artifacts/garage-2026-11-11/green_hauler.png",
+      "output": "assets/game/vehicles/skins/green_hauler.webp",
+      "cwebpOptions": [
+        "-q",
+        "90",
+        "-alpha_q",
+        "100",
+        "-m",
+        "6",
+        "-resize",
+        "0",
+        "512"
+      ]
+    },
+    {
+      "id": "blue_express",
+      "reference": "assets/game/vehicles/bus/bus_blue.webp",
+      "prompt": "Use case: stylized-concept. Asset type: alternate in-game vehicle sprite. Subject: cobalt express coach with icy white roof stripes and subtle silver roof panels. Use the reference as the exact footprint, overhead camera, and orientation guide: keep the single vehicle straight vertical, front bumper and headlights at the BOTTOM, and preserve its length-to-width ratio, silhouette and window placement. Glossy toy-like game art, strong dark outline, clean saturated color, top-left light. Center the complete object with a small clear margin on genuinely transparent background. No floor, cast shadow, glow, lettering, logo, border, watermark, or other objects.",
+      "master": ".local-artifacts/garage-2026-11-11/blue_express.png",
+      "output": "assets/game/vehicles/skins/blue_express.webp",
+      "cwebpOptions": [
+        "-q",
+        "90",
+        "-alpha_q",
+        "100",
+        "-m",
+        "6",
+        "-resize",
+        "0",
+        "512"
+      ]
+    },
+    {
+      "id": "yellow_express",
+      "reference": "assets/game/vehicles/bus/bus_blue.webp",
+      "prompt": "Use case: stylized-concept. Asset type: alternate in-game vehicle sprite. Subject: sunflower yellow express coach with bold charcoal stripes and dark navy glazing. Use the reference as the exact footprint, overhead camera, and orientation guide: keep the single vehicle straight vertical, front bumper and headlights at the BOTTOM, and preserve its length-to-width ratio, silhouette and window placement. Glossy toy-like game art, strong dark outline, clean saturated color, top-left light. Center the complete object with a small clear margin on genuinely transparent background. No floor, cast shadow, glow, lettering, logo, border, watermark, or other objects.",
+      "master": ".local-artifacts/garage-2026-11-11/yellow_express.png",
+      "output": "assets/game/vehicles/skins/yellow_express.webp",
+      "cwebpOptions": [
+        "-q",
+        "90",
+        "-alpha_q",
+        "100",
+        "-m",
+        "6",
+        "-resize",
+        "0",
+        "512"
+      ]
+    },
+    {
+      "id": "level_star",
+      "reference": null,
+      "prompt": "Use case: stylized-concept. Asset type: level rating UI icon. Subject: single chunky golden five-point achievement star, straight-on, symmetrical, dark warm outline, subtle beveled gold facets and upper-left shine. Match a polished colorful cartoon traffic puzzle game, with a compact clean silhouette readable at 12 pixels. Glossy toy-like game art, strong dark outline, clean saturated color, top-left light. Center the complete object with a small clear margin on genuinely transparent background. No floor, cast shadow, glow, lettering, logo, border, watermark, or other objects.",
+      "master": ".local-artifacts/garage-2026-11-11/level_star.png",
+      "output": "assets/ui/icons/level_star.webp",
+      "cwebpOptions": [
+        "-q",
+        "90",
+        "-alpha_q",
+        "100",
+        "-m",
+        "6",
+        "-crop",
+        "47",
+        "32",
+        "1221",
+        "1184",
+        "-resize",
+        "160",
+        "0"
+      ]
+    }
+  ]
+}

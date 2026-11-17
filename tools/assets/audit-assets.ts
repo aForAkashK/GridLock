@@ -67,8 +67,8 @@ for (const file of [...assets].sort()) {
     );
   }
 }
-if (sprites > 12.25 * 1024 ** 2) {
-  errors.push("Vehicle registry exceeds12.25MiB decoded");
+if (sprites > 16 * 1024 ** 2) {
+  errors.push("Full vehicle registry exceeds 16 MiB decoded");
 }
 if (encoded > 4 * 1024 ** 2) {
   errors.push("Imported artwork exceeds4MiB encoded");
@@ -139,7 +139,7 @@ console.log(
   )}MiB (not a live-memory measurement).`
 );
 console.log(
-  `Vehicle cache upper bound: ${(sprites / 1024 ** 2).toFixed(
+  `Full vehicle registry: ${(sprites / 1024 ** 2).toFixed(
     2
   )}MiB RGBA. Shipped audio: ${(audio / 1024).toFixed(0)}KiB.`
 );

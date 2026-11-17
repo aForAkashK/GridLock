@@ -1,3 +1,5 @@
+import { Spacing } from "../../theme/tokens";
+
 /** Painted gameplay anchors and safe viewport placement. Rendering only. */
 const BG_W = 853,
   BG_H = 1843;
@@ -9,6 +11,7 @@ const SIGN = {
 };
 const FIELD = { top: 541 / BG_H, bottom: 1281 / BG_H };
 export const ACTIONS_HEIGHT = 104;
+export const ACTION_SIZE = 70;
 export function gameplayLayout(
   width: number,
   height: number,
@@ -28,7 +31,11 @@ export function gameplayLayout(
     height: (SIGN.bottom - SIGN.top) * bgH,
   };
   const minTop = sign.top + sign.height + 12;
-  const maxBottom = height - ACTIONS_HEIGHT - 12;
+  const actionsHeight = Math.max(
+    ACTIONS_HEIGHT,
+    ACTION_SIZE + insets.bottom + Spacing.md
+  );
+  const maxBottom = height - actionsHeight - 12;
   const boardSize = Math.max(
     1,
     Math.min(
@@ -48,6 +55,7 @@ export function gameplayLayout(
     boardSize,
     boardLeft: (width - boardSize) / 2,
     boardTop,
+    actionsHeight,
   };
 }
 

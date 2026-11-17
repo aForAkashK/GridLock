@@ -85,6 +85,11 @@ def uploadStorePassword = uploadSetting("storePassword", "GRIDLOCK_UPLOAD_STORE_
 def uploadKeyAlias = uploadSetting("keyAlias", "GRIDLOCK_UPLOAD_KEY_ALIAS")
 def uploadKeyPassword = uploadSetting("keyPassword", "GRIDLOCK_UPLOAD_KEY_PASSWORD")
 def hasUploadSigning = uploadStoreFile && uploadStorePassword && uploadKeyAlias && uploadKeyPassword
+def playLicenseKeyFile = rootProject.file("play-licensing-public-key.txt")
+def playLicenseKey = playLicenseKeyFile.exists() ? playLicenseKeyFile.text.replaceAll(/\s/, "") : ""
+if (!(playLicenseKey ==~ /[A-Za-z0-9+\/=]*/)) {
+    throw new GradleException("The Play licensing public key must be Base64.")
+}
 // AGP 9 includes the producer task name in the merged-library output path.
 def crashlyticsNativeDir = layout.buildDirectory.dir("intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib")
 
@@ -102,10 +107,11 @@ android {
         applicationId "com.akssoft.gridlock"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 4
+        versionName "1.0.3"
         manifestPlaceholders = [usesCleartextTraffic: "false"]
         buildConfigField "boolean", "QA_ENABLED", "false"
+        buildConfigField "String", "PLAY_LICENSING_PUBLIC_KEY", "\"${playLicenseKey}\""
     }
     signingConfigs {
         release {
@@ -162,6 +168,9 @@ android {
 }
 
 dependencies {
+    // Play Console needs the Billing permission and SDK metadata to open the
+    // product catalog. Checkout will connect to BillingClient on demand.
+    implementation("com.android.billingclient:billing:8.3.0")
     // Already present via GMA; direct access enables supported on-demand startup.
     implementation("androidx.work:work-runtime:2.7.0")
     // The version of react-native is set by the React Native Gradle Plugin

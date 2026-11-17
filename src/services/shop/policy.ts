@@ -11,6 +11,22 @@ export const SKIN_COLOURS = [
 export type EquipmentCategory = (typeof VEHICLE_CATEGORIES)[number];
 export type SkinColour = (typeof SKIN_COLOURS)[number];
 export type AppearanceSlot = `${EquipmentCategory}:${SkinColour}`;
+function singleSkin<Id extends string>(
+  id: Id,
+  title: string,
+  type: EquipmentCategory,
+  colour: SkinColour
+) {
+  const vehicle =
+    type === "car" ? "compact cars" : type === "truck" ? "trucks" : "buses";
+  return {
+    id,
+    title,
+    price: SKIN_PRICES[type === "car" ? "standard" : type],
+    description: `Replaces ${colour} ${vehicle} only.`,
+    replacements: [{ type, colour, sprite: id }] as const,
+  };
+}
 export const SKINS = [
   {
     id: "default",
@@ -19,14 +35,16 @@ export const SKINS = [
     description: "Original mixed-colour vehicles.",
     replacements: [],
   },
-  {
-    id: "red_racer",
-    title: "Red Racer",
-    price: SKIN_PRICES.standard,
-    description: "Replaces red compact cars only.",
-    replacements: [{ type: "car", colour: "red", sprite: "red_racer" }],
-  },
+  singleSkin("red_racer", "Red Racer", "car", "red"),
+  singleSkin("blue_racer", "Blue Racer", "car", "blue"),
+  singleSkin("green_racer", "Green Racer", "car", "green"),
+  singleSkin("yellow_racer", "Yellow Racer", "car", "yellow"),
+  singleSkin("blue_hauler", "Blue Hauler", "truck", "blue"),
+  singleSkin("green_hauler", "Green Hauler", "truck", "green"),
+  singleSkin("blue_express", "Blue Express", "bus", "blue"),
+  singleSkin("yellow_express", "Yellow Express", "bus", "yellow"),
 ] as const;
+export type ShopSkin = Exclude<(typeof SKINS)[number], { id: "default" }>;
 export type SkinId = (typeof SKINS)[number]["id"];
 export type SkinSlots = Partial<Record<AppearanceSlot, SkinId>>;
 export type Inventory = {
@@ -106,7 +124,7 @@ export function replacementSprite(
   type: string,
   colour: string,
   skinId: string
-): "red_racer" | undefined {
+): ShopSkin["id"] | undefined {
   const skin = SKINS.find((s) => s.id === skinId);
   return skin?.replacements.find((r) => r.type === type && r.colour === colour)
     ?.sprite;

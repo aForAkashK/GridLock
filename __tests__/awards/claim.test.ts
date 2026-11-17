@@ -12,8 +12,12 @@ jest.mock("../../src/services/sync/syncQueue", () => ({
 }));
 jest.mock("../../src/services/storage/mmkv", () => ({
   StorageKeys: {
-    skinSlots: "slots", fleetEquipment: "fleetEquipment", monetization: "monetization", coinHistory: "history",
+    skinSlots: "slots",
+    fleetEquipment: "fleetEquipment",
+    monetization: "monetization",
+    coinHistory: "history",
     coinTransaction: "transaction",
+    playPurchaseReceipts: "playReceipts",
     unlockedSkins: "skins",
     selectedSkin: "selected",
     coins: "coins",
@@ -23,11 +27,14 @@ jest.mock("../../src/services/storage/mmkv", () => ({
     dailyReward: "daily",
     dailyRewardJournal: "dailyJournal",
     completedLevels: "completed",
+    currentLevel: "currentLevel",
+    levelStars: "levelStars",
     pendingAccountRestore: "pending",
   },
   storage: {
     getString: (key: string) => mockValues.get(key),
     getNumber: (key: string) => mockValues.get(key),
+    getBoolean: (key: string) => mockValues.get(key),
     set: (key: string, value: unknown) =>
       mockMutation(() => mockValues.set(key, value)),
     remove: (key: string) => mockMutation(() => mockValues.delete(key)),
@@ -40,11 +47,19 @@ jest.mock("../../src/services/storage/mmkv", () => ({
   setJSON: (key: string, v: unknown) =>
     mockMutation(() => mockValues.set(key, JSON.stringify(v))),
 }));
+import {
+  readLevelStars,
+  saveLevelResult,
+} from "../../src/services/levels/levelResults";
 import { claimAward } from "../../src/services/awards/awardService";
 import {
   coinService,
   claimDailyReward,
 } from "../../src/services/coins/coinService";
+import {
+  commitCoinTransaction,
+  hasPlayCoinReceipt,
+} from "../../src/services/coins/transaction";
 import {
   captureDailyStreak,
   readAwardsProgress,
@@ -61,6 +76,27 @@ beforeEach(() => {
   mockValues.set("coins", 500);
   mockValues.set("version", 10);
   mockValues.set("completed", JSON.stringify([1]));
+});
+it("recovers a coin purchase interrupted before its receipt marker is written", () => {
+  const receiptId = "a".repeat(64);
+  mockFailureAt = 5;
+  expect(() =>
+    commitCoinTransaction({
+      playReceiptId: receiptId,
+      versionAfter: 11,
+      entry: {
+        id: `play:${receiptId}`,
+        at: now,
+        amount: 300,
+        balance: 800,
+        label: "Coin purchase",
+      },
+    })
+  ).toThrow("interrupted");
+  expect(hasPlayCoinReceipt(receiptId)).toBe(false);
+  expect(coinService.getBalance()).toBe(800);
+  expect(hasPlayCoinReceipt(receiptId)).toBe(true);
+  expect(JSON.parse(String(mockValues.get("history")))).toHaveLength(1);
 });
 it("pays a reward once across rapid taps,reopens and later coin reads", () => {
   expect(claimAward("first_escape")).toEqual({ claimed: true, amount: 25 });
@@ -136,3 +172,52 @@ it("does not turn skips,unfinished boards or mismatched levels into perfects", (
   expect(readAwardsProgress().perfectLevels).toEqual([1]);
   expect(coinService.getBalance()).toBe(500);
 });
+
+const nextLevel = { id: 2, parMoves: 4 } as Level;
+const solve = (moveCount: number): GameState => ({
+  levelId: 2,
+  gridSize: 6,
+  status: "won",
+  moveCount,
+  vehicles: [],
+  escaped: [],
+});
+
+it("pays a first solve once and preserves the best stars on slower replays", () => {
+  expect(saveLevelResult(nextLevel, solve(6), false)).toBe(10);
+  expect(readLevelStars()).toEqual({ 2: 1 });
+  expect(saveLevelResult(nextLevel, solve(5), false)).toBe(0);
+  expect(readLevelStars()).toEqual({ 2: 2 });
+  expect(saveLevelResult(nextLevel, solve(4), false)).toBe(0);
+  expect(saveLevelResult(nextLevel, solve(7), false)).toBe(0);
+  expect(readLevelStars()).toEqual({ 2: 3 });
+  expect(readAwardsProgress().perfectLevels).toEqual([2]);
+  expect(coinService.getBalance()).toBe(510);
+  expect(mockValues.get("currentLevel")).toBe(3);
+});
+
+it("unlocks on a skip and lets a later solve earn stars without coins", () => {
+  expect(saveLevelResult(nextLevel, solve(0), true)).toBe(0);
+  expect(readLevelStars()).toEqual({});
+  expect(readAwardsProgress().perfectLevels).toEqual([]);
+  expect(mockValues.get("completed")).toBe("[1,2]");
+  expect(saveLevelResult(nextLevel, solve(4), false)).toBe(0);
+  expect(readLevelStars()).toEqual({ 2: 3 });
+  expect(coinService.getBalance()).toBe(500);
+});
+
+it.each([1, 2, 3, 4, 5, 6, 7, 8, 9])(
+  "repairs an interrupted first solve at write %d without losing its rating or doubling its coins",
+  (failure) => {
+    mockFailureAt = failure;
+    expect(() => saveLevelResult(nextLevel, solve(4), false)).toThrow(
+      "interrupted"
+    );
+    mockFailureAt = 0;
+    saveLevelResult(nextLevel, solve(4), false);
+    expect(coinService.getBalance()).toBe(510);
+    expect(readLevelStars()).toEqual({ 2: 3 });
+    expect(readAwardsProgress().perfectLevels).toEqual([2]);
+    expect(mockValues.get("completed")).toBe("[1,2]");
+  }
+);

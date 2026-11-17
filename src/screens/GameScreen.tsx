@@ -32,7 +32,7 @@ import {
 import { canPlayLevel } from "../game/levels/progression";
 import { useGameStore } from "../state/gameStore";
 import { usePlayerStore } from "../state/playerStore";
-import { COIN_COSTS, COIN_REWARDS } from "../services/coins/types";
+import { COIN_COSTS } from "../services/coins/types";
 import { flush as flushSync } from "../services/sync/syncQueue";
 import type { RootStackParamList } from "../navigation/types";
 import { Colors, Spacing } from "../theme/tokens";
@@ -44,19 +44,19 @@ import {
 import { computeHint } from "../game/engine/hint";
 import { play } from "../services/audio/audioService";
 
-import { gameplayLayout, ACTIONS_HEIGHT } from "../game/rendering/screenLayout";
+import { gameplayLayout, ACTION_SIZE } from "../game/rendering/screenLayout";
 
 const BG = require("../../assets/ui/bg/gameplay_bg.webp");
 
 /**
  * Finished button art. The coin cost is PAINTED INTO each one, so nothing is
  * drawn on top and `COIN_COSTS` must stay in step with the pictures:
- * hint 30, undo 20, restart FREE, skip 100. Changing a price means new art.
+ * hint 30, undo 20 and skip 100. Restart has a live price label.
  */
 const ACTION_ART = {
   hint: require("../../assets/ui/buttons/hint.webp"),
   undo: require("../../assets/ui/buttons/undo.webp"),
-  reset: require("../../assets/ui/buttons/reset_free.webp"),
+  reset: require("../../assets/ui/buttons/reset.webp"),
   skip: require("../../assets/ui/buttons/skip.webp"),
 } as const;
 
@@ -70,9 +70,7 @@ export function GameScreen({ route, navigation }: Props) {
 
   const coins = usePlayerStore((s) => s.coins);
   const spend = usePlayerStore((s) => s.spend);
-  const earn = usePlayerStore((s) => s.earn);
-  const recordAwardResult = usePlayerStore((s) => s.recordAwardResult);
-  const completeLevel = usePlayerStore((s) => s.completeLevel);
+  const saveLevelResult = usePlayerStore((s) => s.saveLevelResult);
   const completedLevels = usePlayerStore((s) => s.completedLevels);
 
   const level = useGameStore((s) => s.level);
@@ -107,10 +105,10 @@ export function GameScreen({ route, navigation }: Props) {
       return;
     }
     loadLevel(target);
-    setAwarded(0);
+    setAwarded(null);
   }, [levelId, loadLevel, target, navigation]);
 
-  const [awarded, setAwarded] = useState(0);
+  const [awarded, setAwarded] = useState<number | null>(null);
   useEffect(() => {
     if (!preview || state?.levelId !== levelId || state.moveCount !== 0) {
       return;
@@ -127,18 +125,6 @@ export function GameScreen({ route, navigation }: Props) {
     return () => clearTimeout(timer);
   }, [preview, levelId, state]);
 
-  /**
-   * Award exactly once per level, ever.
-   *
-   * Two distinct ways this could double-pay, both guarded:
-   *
-   * 1. `navigation.replace` for "Next level" remounts this screen with the new
-   *    levelId while the store still holds the PREVIOUS level's won state for
-   *    one render. Without the `level.id !== levelId` check the effect fires
-   *    again and pays out a second time for the level just finished.
-   * 2. Replaying an already-cleared level would otherwise pay again, which is
-   *    a trivial coin farm — clear level 1, replay, repeat.
-   */
   const won = state?.status === "won";
   const resultsConsumed = useRef(false);
   useEffect(() => {
@@ -150,52 +136,29 @@ export function GameScreen({ route, navigation }: Props) {
     if (!preview && !skipped) ads.showInterstitial(after);
     else after();
   };
+  const settledBoard = useRef<typeof state>(null);
   useEffect(() => {
+    if (!won) {
+      settledBoard.current = null;
+      setAwarded(null);
+      return;
+    }
     if (
-      !preview &&
-      won &&
-      level &&
-      state &&
-      level.id === levelId &&
-      state.levelId === levelId
-    ) {
-      recordAwardResult(level, state, skipped);
-    }
-  }, [preview, won, skipped, level, state, levelId, recordAwardResult]);
-  useEffect(() => {
-    if (preview || !won || !level) {
+      !level ||
+      !state ||
+      level.id !== levelId ||
+      state.levelId !== levelId ||
+      settledBoard.current === state
+    )
       return;
-    }
-    if (level.id !== levelId) {
-      return; // stale state from the level we just left
-    }
-    if (completedLevels.includes(level.id)) {
-      setAwarded(0);
-      return; // already paid for this one
-    }
-    // A skipped level still unlocks the next one, but pays nothing — see the
-    // `skipped` note in gameStore.
-    completeLevel(level.id);
-    if (skipped) {
-      setAwarded(0);
-      return;
-    }
-    earn(COIN_REWARDS.level_complete, "level_complete");
-    play("coin");
-    setAwarded(COIN_REWARDS.level_complete);
-    // Level complete is a natural checkpoint (DECISIONS.md D-004): push the
-    // new balance now rather than waiting for the idle timer or backgrounding.
-    flushSync();
-  }, [
-    won,
-    level,
-    levelId,
-    completedLevels,
-    completeLevel,
-    earn,
-    skipped,
-    preview,
-  ]);
+
+    const amount = preview ? 0 : saveLevelResult(level, state, skipped);
+    if (amount === null) return;
+    settledBoard.current = state;
+    setAwarded(amount);
+    if (amount > 0) play("coin");
+    if (!preview) flushSync();
+  }, [preview, won, level, state, levelId, saveLevelResult, skipped]);
 
   const handleCellTap = useCallback(
     (x: number, y: number) => {
@@ -267,18 +230,30 @@ export function GameScreen({ route, navigation }: Props) {
     }
   }, [historyLength, canAfford, spend, undo, preview]);
 
-  const handleReset = useCallback(() => {
-    breadcrumb("game.reset");
+  const restartBoard = useCallback(() => {
     setDeadEnd(false);
     reset();
   }, [reset]);
 
-  const { background, sign, boardSize, boardLeft, boardTop } = gameplayLayout(
-    width,
-    height,
-    insets,
-    level?.gridSize ?? 6
-  );
+  const handleReset = useCallback(() => {
+    const board = useGameStore.getState().state;
+    if (
+      !board ||
+      board.levelId !== levelId ||
+      board.status !== "playing" ||
+      board.moveCount === 0
+    )
+      return;
+    breadcrumb("game.reset");
+    if (preview || spend(COIN_COSTS.reset, "reset")) {
+      restartBoard();
+    } else {
+      setShortfall(COIN_COSTS.reset);
+    }
+  }, [levelId, preview, restartBoard, spend]);
+
+  const { background, sign, boardSize, boardLeft, boardTop, actionsHeight } =
+    gameplayLayout(width, height, insets, level?.gridSize ?? 6);
 
   if (canUseEmulatorQA()) {
     recordQABoard({
@@ -353,7 +328,10 @@ export function GameScreen({ route, navigation }: Props) {
       </View>
 
       <View
-        style={[styles.actions, { paddingBottom: insets.bottom + Spacing.md }]}
+        style={[
+          styles.actions,
+          { height: actionsHeight, paddingBottom: insets.bottom + Spacing.md },
+        ]}
       >
         <Action
           art={ACTION_ART.hint}
@@ -370,7 +348,9 @@ export function GameScreen({ route, navigation }: Props) {
         />
         <Action
           art={ACTION_ART.reset}
-          label="Restart level, free"
+          label={`Restart level, ${COIN_COSTS.reset} coins`}
+          price={COIN_COSTS.reset}
+          disabled={state.moveCount === 0 || won}
           affordable={canAfford(COIN_COSTS.reset)}
           onPress={handleReset}
         />
@@ -387,6 +367,7 @@ export function GameScreen({ route, navigation }: Props) {
         needed={shortfall ?? undefined}
         balance={coins}
         onDismiss={() => setShortfall(null)}
+        onBuyCoins={() => navigation.navigate("BuyCoins")}
         onAds={() => {
           setShortfall(null);
           navigation.navigate("AdBenefits");
@@ -394,10 +375,11 @@ export function GameScreen({ route, navigation }: Props) {
       />
 
       <LevelCompleteModal
-        visible={won}
+        visible={won && state.levelId === levelId && awarded !== null}
         moveCount={state.moveCount}
         parMoves={level.parMoves}
-        coinsAwarded={awarded}
+        coinsAwarded={awarded ?? 0}
+        preview={preview}
         skipped={skipped}
         hasNextLevel={nextId !== undefined}
         onNext={() =>
@@ -406,7 +388,7 @@ export function GameScreen({ route, navigation }: Props) {
               navigation.replace("Game", { levelId: nextId, preview });
           })
         }
-        onReplay={() => leaveResults(reset)}
+        onReplay={() => leaveResults(restartBoard)}
         onHome={() => leaveResults(() => navigation.popTo("Home"))}
       />
     </View>
@@ -419,8 +401,7 @@ export function GameScreen({ route, navigation }: Props) {
  * tappable and explains itself, because a dead button reads as a broken UI
  * (DESIGN.md).
  *
- * The art carries the icon AND the price, so this renders no text — only the
- * accessibility label spells it out, since a screen reader cannot read a PNG.
+ * Restart overlays its live price on the existing button art.
  */
 function Action({
   art,
@@ -428,12 +409,14 @@ function Action({
   onPress,
   disabled,
   affordable = true,
+  price,
 }: {
   art: number;
   label: string;
   onPress?: () => void;
   disabled?: boolean;
   affordable?: boolean;
+  price?: number;
 }) {
   return (
     <Pressable
@@ -460,6 +443,18 @@ function Action({
         resizeMode="contain"
         accessibilityIgnoresInvertColors
       />
+      {price !== undefined ? (
+        <View pointerEvents="none" style={styles.actionPrice}>
+          <Image
+            source={require("../../assets/ui/icons/coin.webp")}
+            style={styles.priceCoin}
+            accessible={false}
+          />
+          <Text style={styles.priceText} allowFontScaling={false}>
+            {price}
+          </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -501,13 +496,27 @@ const styles = StyleSheet.create({
   actions: {
     marginTop: "auto",
     zIndex: 2,
-    height: ACTIONS_HEIGHT,
     flexDirection: "row",
     justifyContent: "space-evenly",
     alignItems: "flex-start",
   },
   // Source art is square (1254x1254).
-  actionImage: { width: 70, height: 70 },
+  actionImage: { width: ACTION_SIZE, height: ACTION_SIZE },
+  actionPrice: {
+    position: "absolute",
+    top: 43,
+    left: 14,
+    width: 42,
+    height: 16,
+    borderRadius: 9,
+    backgroundColor: "#660e07",
+    flexDirection: "row",
+    gap: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  priceCoin: { width: 14, height: 14 },
+  priceText: { color: "#fff", fontSize: 13, fontWeight: "900" },
   actionDim: { opacity: 0.45 },
   actionPressed: { transform: [{ scale: 0.94 }] },
 

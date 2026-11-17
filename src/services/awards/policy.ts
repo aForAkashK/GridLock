@@ -1,3 +1,4 @@
+import { rateSolve } from "../levels/ratings";
 /** Pure bounded snapshots; unique level IDs and receipts prevent replay farming. */
 import { AWARDS, awardById } from "./catalog";
 export type AwardsProgress = {
@@ -104,11 +105,7 @@ export function recordPerfect(
     !Number.isSafeInteger(levelId) ||
     levelId < 1 ||
     levelId > 1000000 ||
-    !Number.isSafeInteger(moves) ||
-    moves < 1 ||
-    !Number.isSafeInteger(par) ||
-    Number(par) < 1 ||
-    moves > Number(par)
+    rateSolve(moves, par) !== 3
   )
     return progress;
   if (progress.perfectLevels.includes(levelId)) return progress;

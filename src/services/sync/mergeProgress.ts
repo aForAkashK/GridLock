@@ -1,3 +1,5 @@
+import { mergeLevelStars, type LevelStars } from "../levels/ratings";
+
 /**
  * Level-progress merge. Pure — no storage, no Firebase — so it is unit-tested
  * directly.
@@ -8,7 +10,11 @@
  * player really cleared. `currentLevel` follows the same logic: take the max.
  */
 
-export type Progress = { completedLevels: number[]; currentLevel: number };
+export type Progress = {
+  completedLevels: number[];
+  currentLevel: number;
+  levelStars?: LevelStars;
+};
 
 export type ProgressMerge = {
   merged: Progress;
@@ -47,11 +53,24 @@ export function mergeProgress(
   const cloudCurrent = sanitizeLevel(cloud?.currentLevel);
   const currentLevel = Math.max(localCurrent, cloudCurrent);
 
+  const localStars = mergeLevelStars(local.levelStars);
+  const cloudStars = mergeLevelStars(cloud?.levelStars);
+  const levelStars = mergeLevelStars(localStars, cloudStars);
+  const gainedStars = Object.entries(levelStars);
+
   return {
-    merged: { completedLevels: union, currentLevel },
+    merged: {
+      completedLevels: union,
+      currentLevel,
+      ...(gainedStars.length ? { levelStars } : {}),
+    },
     localChanged:
-      union.length !== localLevels.length || currentLevel !== localCurrent,
+      union.length !== localLevels.length ||
+      currentLevel !== localCurrent ||
+      gainedStars.some(([id, stars]) => localStars[Number(id)] !== stars),
     cloudBehind:
-      union.length !== cloudLevels.length || currentLevel !== cloudCurrent,
+      union.length !== cloudLevels.length ||
+      currentLevel !== cloudCurrent ||
+      gainedStars.some(([id, stars]) => cloudStars[Number(id)] !== stars),
   };
 }

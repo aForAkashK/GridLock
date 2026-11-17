@@ -15,6 +15,9 @@ import { GameScreen } from "../screens/GameScreen";
 import { LevelSelectScreen } from "../screens/LevelSelectScreen";
 import { ShopScreen } from "../screens/ShopScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
+import { BuyCoinsScreen } from "../screens/BuyCoinsScreen";
+import { canUseEmulatorQA } from "../services/debug/emulatorQA";
+import { isPlayCheckoutConfigured } from "../services/purchases/coinCatalog";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -31,6 +34,9 @@ export function RootNavigator() {
       <Stack.Screen name="DailyRewards" component={DailyRewardsScreen} />
       <Stack.Screen name="Awards" component={AwardsScreen} />
       <Stack.Screen name="AdBenefits" component={AdBenefitsScreen} />
+      {isPlayCheckoutConfigured || canUseEmulatorQA() ? (
+        <Stack.Screen name="BuyCoins" component={BuyCoinsScreen} />
+      ) : null}
       <Stack.Screen name="Settings" component={SettingsScreen} />
     </Stack.Navigator>
   );

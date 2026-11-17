@@ -1,8 +1,7 @@
 /**
  * The direction arrow.
  *
- * This is the most important element on a vehicle — it is the only thing that
- * tells the player what a tap will do (DESIGN.md). It is drawn as a stroked
+ * Levels 1–10 use this overlay to teach which way a vehicle moves. It is drawn as a stroked
  * path with round caps rather than a filled polygon: strokes stay legible at
  * small cell sizes, scale cleanly, and give the soft toy-like feel the art
  * direction calls for.

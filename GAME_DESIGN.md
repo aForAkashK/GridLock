@@ -138,13 +138,13 @@ how far ahead the player must think — which is why the solver records
 
 ## Assistance
 
-Assistance is optional. Restart is free; the other actions use coins.
+Assistance costs coins. Reset restarts the puzzle on tap for 50 coins once the player has made a move. Replay from the results screen remains free.
 
 | Action | Cost | Behaviour |
 |---|---|---|
 | Hint | 30 | Highlights a genuinely useful next move |
 | Undo | 20 | Reverts one move |
-| Reset | 0 | Back to the level's starting state |
+| Reset | 50 | Restarts a puzzle in progress on tap |
 | Skip | 100 | Marks complete, moves on |
 
 **A hint must be a real move, not a random highlight.** It runs the solver from
@@ -173,7 +173,7 @@ be stuck without feeling poor.
 
 Daily is a manual claim, once per device-local calendar date. Consecutive claims pay 20, 30, 40, 50, 60, 80, then 100 coins; Day 7 and every subsequent consecutive day pay 100. Missing a calendar date resets the next claim to Day 1 (20). Opening the app without claiming does not preserve the streak. Rewards become available at local midnight, not 24 hours after the prior claim.
 
-Daily claims work offline, use a durable local intent to repair interrupted writes, and sync their last date/time/streak with the existing player save. Repeated taps cannot award twice. Backward clock/date changes cannot reopen a claim. This client-clock policy is not fraud-proof and cannot provide global exactly-once awards across concurrently offline devices; trusted verification is needed before selling currency.
+Daily claims work offline, use a durable local intent to repair interrupted writes, and sync their last date/time/streak with the existing player save. Repeated taps cannot award twice. Backward clock/date changes cannot reopen a claim. This client-clock policy cannot provide global exactly-once awards across concurrently offline devices. Android coin packs use the direct checkout scope in D-034.
 
 Planned rewarded ads pay 50 coins per completed ad, capped at 3 per day. No reward for a partial view; actual ad length comes from the provider. This is a policy/configuration only until the SDK and verified reward path are implemented.
 
@@ -216,7 +216,7 @@ later is a data change, not an engine rewrite.
 
 ## First-release campaign update (2026-10-26)
 
-100 prepared levels ship offline. Show 1–50 initially, then reveal 51–100 after the first group is complete; existing Skip completion counts. Boards: 6×6 through59, 7×7 at60–79, 8×8 at80–100. Later sizes require a reviewed app change. Restart costs **0 coins**, superseding the old paid-reset entry: a player can always retry without currency. Daily rewards are available; Awards are implemented; Shop offers Red Racer, Inventory and local Coin History. Human difficulty calibration across the full campaign remains a launch acceptance task.
+100 prepared levels ship offline. Show 1–50 initially, then reveal 51–100 after the first group is complete; existing Skip completion counts. Boards: 6×6 through59, 7×7 at60–79, 8×8 at80–100. Later sizes require a reviewed app change. The original closed-test build shipped free restart. See Assistance above for the current price. Daily rewards are available; Awards are implemented; Shop offers car, truck and bus skins, Inventory and local Coin History. Human difficulty calibration across the full campaign remains a launch acceptance task.
 
 ## Awards (2026-10-28)
 
@@ -236,3 +236,11 @@ Equipment correction: Shop lists paid cosmetics and marks purchased items Owned.
 ## Ads release economy (2026-10-28; supersedes planned D-018 values)
 
 Coin rewarded ads pay10/15/20/25/35/50 for the first six each local day, then10 each without a claim cap. Only completed coin ads advance that ladder. Five separate completed pass ads give24 rolling hours without forced level ads; no coins for these views and partial progress is retained across days. Seven-day coin pass1000;30-day coin pass3000. Coin purchases extend existing expiry. Optional coin ads remain available during passes. Skip/developer preview have no level ad; normal win results offer a ready interstitial on Next/Replay/Home after every four completed real rounds (including replay wins), with immediate navigation on the other three or when no ad is ready. Device-local pacing survives restart; active-pass results reset it. No mid-puzzle or app-open ads, permanent purchase or real-money skin purchase is included.
+
+### Level ratings and rewards
+
+A solve at or under par earns three stars, one move over par earns two, and two or more moves over par earn one. A solved board without par earns one star. Keep each level’s best rating. Prior recorded perfect solves display three stars. Skips and older clears without move data are unrated. The results panel shows the actual coin award, including zero for replays and skips. The first unskipped completion still pays 10 coins. Awards ready to claim appear first, followed by in-progress awards and collected rewards.
+
+### Offline chapters after level 100
+
+Finishing level 99 prepares levels 101–120 in the background. Finishing level 100 opens 101, and the rest unlock one at a time. The same pattern continues at 119/120, 139/140 and later boundaries through level 2000. All additional levels use 8×8 boards with 12–14 vehicles. The existing skip, star and coin rules apply.

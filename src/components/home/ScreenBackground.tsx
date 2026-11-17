@@ -10,13 +10,23 @@
  */
 
 import React from 'react';
-import { Image, StyleSheet, useWindowDimensions, View } from 'react-native';
+import {
+  Image,
+  type ImageSourcePropType,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 const BG = require('../../../assets/ui/bg/home.webp');
 
-type Props = { children: React.ReactNode; scrim?: number };
+type Props = {
+  children: React.ReactNode;
+  scrim?: number;
+  source?: ImageSourcePropType;
+};
 
-export function ScreenBackground({ children, scrim = 0.68 }: Props) {
+export function ScreenBackground({ children, scrim = 0.68, source = BG }: Props) {
   const { width, height } = useWindowDimensions();
 
   return (
@@ -24,7 +34,7 @@ export function ScreenBackground({ children, scrim = 0.68 }: Props) {
       {/* Explicit size: an Image with only inset-0 has no definite box, so
           `cover` falls back to intrinsic size treated as dp. See DESIGN.md. */}
       <Image
-        source={BG}
+        source={source}
         style={[styles.bg, { width, height }]}
         resizeMode="cover"
         accessibilityIgnoresInvertColors

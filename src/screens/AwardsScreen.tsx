@@ -28,10 +28,16 @@ export function AwardsScreen({ navigation }: Props) {
   const completed = usePlayerStore((s) => s.completedLevels);
   const claim = usePlayerStore((s) => s.claimAward);
   const [message, setMessage] = useState("");
-  const statuses = useMemo(
-    () => AWARDS.map((award) => awardStatus(award.id, progress, completed)!),
-    [progress, completed]
-  );
+  const statuses = useMemo(() => {
+    const rows = AWARDS.map(
+      (award) => awardStatus(award.id, progress, completed)!
+    );
+    return [
+      ...rows.filter((row) => row.claimable),
+      ...rows.filter((row) => !row.claimable && !row.claimed),
+      ...rows.filter((row) => row.claimed),
+    ];
+  }, [progress, completed]);
   const claimed = statuses.filter((status) => status.claimed).length;
   const available = statuses.filter((status) => status.claimable).length;
   const collect = (id: AwardId) => {

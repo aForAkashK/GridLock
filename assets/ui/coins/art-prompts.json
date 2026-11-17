@@ -1,0 +1,31 @@
+{
+  "tool": "Built-in ImageGen",
+  "reference": "Approved Freeway Escape Buy Coins mockup",
+  "prompt": "Use case: stylized-concept. Create a transparent 2 by 2 sprite sheet of FOUR isolated cartoon gold coin pack illustrations for the reference Android game Freeway Escape. Use the approved screenshot solely to match the four objects closely. Square canvas, exact four equal quadrants, artwork centered within each quadrant, at least 9% of that quadrant blank space on EVERY side with large transparent gaps. Top left: a few very small stacks of thick shiny gold star-stamped coins. Top right: generous mound of thick shiny gold star-stamped coins. Bottom left: open blue roadside toolbox overflowing with star coins, with a few loose coins in front. Bottom right: open orange and gold chest with royal blue steel details overflowing with gold star coins, with a few loose coins in front. Chunky clean premium mobile game WebP sprite style, soft small contact shading and top-left light, same 3/4 view and consistent coin size. No text, letters, numbers, prices, stickers, UI frames, cards, colored backdrops or separate decoration. Genuinely transparent alpha.",
+  "master": ".local-artifacts/coin-packs/coin_pack_master.png",
+  "export": {
+    "width": 480,
+    "cropSize": [
+      524,
+      454
+    ],
+    "origins": {
+      "pack_300": [
+        68,
+        103
+      ],
+      "pack_900": [
+        658,
+        87
+      ],
+      "pack_1800": [
+        59,
+        699
+      ],
+      "pack_3300": [
+        653,
+        699
+      ]
+    }
+  }
+}

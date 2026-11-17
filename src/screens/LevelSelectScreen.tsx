@@ -21,6 +21,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { LevelStars } from "../components/LevelStars";
 import { CoinPill } from "../components/CoinPill";
 import { levelSelectLayout } from "../game/rendering/screenLayout";
 import { usePlayerStore } from "../state/playerStore";
@@ -33,6 +34,8 @@ import { Home, Radius, Spacing } from "../theme/tokens";
 const BG = require("../../assets/ui/bg/levels_bg.webp");
 const TILE_OPEN = require("../../assets/ui/buttons/playable_level.webp");
 const TILE_LOCKED = require("../../assets/ui/buttons/disabled_level.webp");
+const TILE_ACTIVE = require("../../assets/ui/panels/level_tile_active.webp");
+const TILE_COMPLETED = require("../../assets/ui/panels/level_tile_completed.webp");
 
 const COLUMNS = 4;
 
@@ -43,9 +46,18 @@ export function LevelSelectScreen({ navigation }: Props) {
   const { width, height } = useWindowDimensions();
   const allLevels = useLevelCatalogStore((s) => s.levels);
   const completed = usePlayerStore((s) => s.completedLevels);
+  const bestStars = usePlayerStore((s) => s.levelStars);
+  const perfectLevels = usePlayerStore((s) => s.awards.perfectLevels);
+  const perfectIds = useMemo(() => new Set(perfectLevels), [perfectLevels]);
   const levels = useMemo(
     () => visibleLevels(allLevels, completed),
     [allLevels, completed]
+  );
+  const completedIds = useMemo(() => new Set(completed), [completed]);
+  const activeIndex = levels.findIndex(
+    (level, index) =>
+      !completedIds.has(level.id) &&
+      (index === 0 || completedIds.has(levels[index - 1].id))
   );
   const coins = usePlayerStore((s) => s.coins);
   const devToggleUnlockAll = usePlayerStore((s) => s.devToggleUnlockAll);
@@ -118,9 +130,17 @@ export function LevelSelectScreen({ navigation }: Props) {
         ]}
         showsVerticalScrollIndicator={false}
         renderItem={({ item: level, index }) => {
-          const isDone = completed.includes(level.id);
+          const isDone = completedIds.has(level.id);
+          const isActive = index === activeIndex;
+          const rating = perfectIds.has(level.id)
+            ? 3
+            : bestStars[level.id] ?? 0;
           const previous = levels[index - 1];
-          const unlocked = index === 0 || completed.includes(previous.id);
+          const unlocked = index === 0 || completedIds.has(previous.id);
+          let tile = TILE_LOCKED;
+          if (isDone) tile = TILE_COMPLETED;
+          else if (isActive) tile = TILE_ACTIVE;
+          else if (unlocked) tile = TILE_OPEN;
 
           return (
             <Pressable
@@ -128,9 +148,18 @@ export function LevelSelectScreen({ navigation }: Props) {
               disabled={!unlocked}
               onPress={() => navigation.navigate("Game", { levelId: level.id })}
               accessibilityRole="button"
+              accessibilityState={{ disabled: !unlocked }}
               accessibilityLabel={
                 unlocked
-                  ? `Level ${level.id}${isDone ? ", completed" : ""}`
+                  ? `Level ${level.id}${
+                      rating
+                        ? `, ${rating} of 3 stars`
+                        : isDone
+                        ? ", completed, no rating yet"
+                        : isActive
+                        ? ", next level"
+                        : ""
+                    }`
                   : `Level ${level.id}, locked`
               }
               style={({ pressed }) => [
@@ -143,7 +172,7 @@ export function LevelSelectScreen({ navigation }: Props) {
                   intrinsic size treated as dp — a 1254px tile then renders
                   enormous. Same trap as the screen backgrounds. */}
               <Image
-                source={unlocked ? TILE_OPEN : TILE_LOCKED}
+                source={tile}
                 style={{ width: tileSize, height: tileSize }}
                 resizeMode="contain"
                 accessibilityIgnoresInvertColors
@@ -154,12 +183,17 @@ export function LevelSelectScreen({ navigation }: Props) {
                 style={[
                   styles.number,
                   { fontSize: tileSize * 0.25 },
+                  isActive && styles.numberActive,
                   !unlocked && styles.numberLocked,
                 ]}
               >
                 {level.id}
               </Text>
-              {isDone ? <Text style={styles.done}>✓</Text> : null}
+              {isDone ? (
+                <View pointerEvents="none" style={styles.rating}>
+                  <LevelStars rating={rating} size={tileSize * 0.19} />
+                </View>
+              ) : null}
             </Pressable>
           );
         }}
@@ -174,6 +208,7 @@ export function LevelSelectScreen({ navigation }: Props) {
         visible={coinInfo}
         balance={coins}
         onDismiss={() => setCoinInfo(false)}
+        onBuyCoins={() => navigation.navigate("BuyCoins")}
       />
     </View>
   );
@@ -215,14 +250,18 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 3,
   },
+  numberActive: { color: "#472005", textShadowColor: "#FFF3AD" },
   numberLocked: { color: "#A8B4C8" },
-  done: {
+  rating: {
     position: "absolute",
-    top: 4,
-    right: 6,
-    color: "#5BD94A",
-    fontSize: 15,
-    fontWeight: "900",
+    left: "12%",
+    right: "12%",
+    height: "24%",
+    bottom: "19%",
+    backgroundColor: "#0c427e",
+    borderRadius: Radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   hintWrap: {
