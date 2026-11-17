@@ -108,7 +108,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 4
-        versionName "1.0.3"
+        versionName "1.3"
         manifestPlaceholders = [usesCleartextTraffic: "false"]
         buildConfigField "boolean", "QA_ENABLED", "false"
         buildConfigField "String", "PLAY_LICENSING_PUBLIC_KEY", "\"${playLicenseKey}\""
